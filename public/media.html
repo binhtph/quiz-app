@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý Media - Quiz App</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .media-container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .media-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .media-actions {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .upload-zone {
+            border: 2px dashed var(--border);
+            border-radius: var(--radius);
+            padding: 3rem;
+            text-align: center;
+            background: var(--bg-card);
+            transition: all 0.3s;
+            cursor: pointer;
+            margin-bottom: 2rem;
+        }
+
+        .upload-zone:hover,
+        .upload-zone.dragover {
+            border-color: var(--primary);
+            background: rgba(59, 130, 246, 0.05);
+        }
+
+        .upload-zone svg {
+            width: 48px;
+            height: 48px;
+            color: var(--text-muted);
+            margin-bottom: 1rem;
+        }
+
+        .upload-zone h3 {
+            margin-bottom: 0.5rem;
+        }
+
+        .upload-zone p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .media-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .media-item {
+            background: var(--bg-card);
+            border-radius: var(--radius);
+            overflow: hidden;
+            border: 1px solid var(--border);
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .media-item:hover {
+            box-shadow: var(--shadow-lg);
+            transform: translateY(-2px);
+        }
+
+        .media-item.selected {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+
+        .media-checkbox {
+            position: absolute;
+            top: 0.75rem;
+            left: 0.75rem;
+            z-index: 10;
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .media-thumbnail {
+            width: 100%;
+            height: 160px;
+            object-fit: cover;
+            background: var(--bg-secondary);
+            display: block;
+        }
+
+        .media-info {
+            padding: 1rem;
+        }
+
+        .media-name {
+            font-weight: 500;
+            font-size: 0.85rem;
+            word-break: break-all;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .media-name input {
+            flex: 1;
+            font-size: 0.85rem;
+            padding: 0.25rem 0.5rem;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+        }
+
+        .media-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.25rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .media-tag {
+            font-size: 0.7rem;
+            padding: 0.15rem 0.4rem;
+            border-radius: 4px;
+            background: var(--bg-secondary);
+            color: var(--text-muted);
+        }
+
+        .media-tag.used {
+            background: rgba(34, 197, 94, 0.1);
+            color: #22c55e;
+        }
+
+        .media-tag.unused {
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+        }
+
+        .media-tag.exam {
+            background: rgba(59, 130, 246, 0.1);
+            color: var(--primary);
+        }
+
+        .media-tag.source-upload {
+            background: rgba(139, 92, 246, 0.1);
+            color: #8b5cf6;
+        }
+
+        .media-tag.source-editor {
+            background: rgba(249, 115, 22, 0.1);
+            color: #f97316;
+        }
+
+        .media-tag.source-logo {
+            background: rgba(236, 72, 153, 0.1);
+            color: #ec4899;
+        }
+
+        .media-tag.source-other {
+            background: rgba(107, 114, 128, 0.1);
+            color: #6b7280;
+        }
+
+        .inline-rename {
+            flex: 1;
+            font-size: 0.8rem;
+            padding: 0.2rem 0.4rem;
+            border: 1px solid transparent;
+            border-radius: var(--radius-sm);
+            background: transparent;
+            min-width: 0;
+            transition: all 0.2s;
+        }
+
+        .inline-rename:hover {
+            background: var(--bg-secondary);
+        }
+
+        .inline-rename:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: var(--bg-card);
+        }
+
+        .ext-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            flex-shrink: 0;
+        }
+
+        .media-actions-row {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .media-actions-row button {
+            flex: 1;
+            font-size: 0.75rem;
+            padding: 0.4rem 0.5rem;
+        }
+
+        .bulk-actions {
+            display: none;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            background: var(--bg-card);
+            border-radius: var(--radius);
+            margin-bottom: 1.5rem;
+            border: 1px solid var(--border);
+        }
+
+        .bulk-actions.active {
+            display: flex;
+        }
+
+        .bulk-actions span {
+            font-weight: 500;
+        }
+
+        .stats-bar {
+            display: flex;
+            gap: 2rem;
+            margin-bottom: 1.5rem;
+            padding: 1rem;
+            background: var(--bg-card);
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .filter-bar {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-bar select,
+        .filter-bar input {
+            padding: 0.5rem 1rem;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            background: var(--bg-card);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: var(--text-muted);
+        }
+
+        .empty-state svg {
+            width: 64px;
+            height: 64px;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        @media (max-width: 768px) {
+            .media-grid {
+                grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            }
+        }
+
+        /* List View Styles */
+        .media-grid.list-view {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .media-grid.list-view .media-item {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+        }
+
+        .media-grid.list-view .media-item:hover {
+            transform: none;
+        }
+
+        .media-grid.list-view .media-checkbox {
+            position: static;
+            margin: 0 1rem;
+        }
+
+        .media-grid.list-view .media-thumbnail {
+            width: 80px;
+            height: 60px;
+            flex-shrink: 0;
+        }
+
+        .media-grid.list-view .media-info {
+            flex: 1;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.75rem 1rem;
+        }
+
+        .media-grid.list-view .media-name {
+            margin-bottom: 0;
+            min-width: 200px;
+            flex: 1;
+        }
+
+        .media-grid.list-view .media-tags {
+            margin-bottom: 0;
+            min-width: 150px;
+        }
+
+        .media-grid.list-view .media-actions-row {
+            flex-wrap: nowrap;
+        }
+
+        .view-toggle {
+            display: flex;
+            gap: 0.25rem;
+            background: var(--bg-secondary);
+            padding: 0.25rem;
+            border-radius: var(--radius-sm);
+        }
+
+        .view-btn {
+            padding: 0.5rem;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            border-radius: var(--radius-sm);
+            color: var(--text-muted);
+            transition: all 0.2s;
+        }
+
+        .view-btn:hover {
+            color: var(--text);
+        }
+
+        .view-btn.active {
+            background: var(--bg-card);
+            color: var(--primary);
+            box-shadow: var(--shadow-sm);
+        }
+
+        /* Toast Notification */
+        .toast-container {
+            position: fixed;
+            top: 1.5rem;
+            right: 1.5rem;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .toast {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1rem 1.5rem;
+            box-shadow: var(--shadow-lg);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            min-width: 280px;
+            max-width: 400px;
+            animation: slideIn 0.3s ease;
+        }
+
+        .toast.success {
+            border-left: 4px solid #22c55e;
+        }
+
+        .toast.error {
+            border-left: 4px solid #ef4444;
+        }
+
+        .toast.info {
+            border-left: 4px solid var(--primary);
+        }
+
+        .toast.fade-out {
+            animation: fadeOut 0.5s ease forwards;
+        }
+
+        .toast-icon {
+            font-size: 1.25rem;
+            flex-shrink: 0;
+        }
+
+        .toast-message {
+            flex: 1;
+            font-size: 0.9rem;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadeOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container media-container">
+        <header class="header">
+            <h1>
+                <a href="/">📝 Quiz App</a>
+                <span style="font-weight: 400; font-size: 1rem; color: var(--text-muted);"> / Quản lý Media</span>
+            </h1>
+            <div class="header-actions">
+                <a href="/" class="btn btn-secondary">← Quay lại</a>
+            </div>
+        </header>
+
+        <!-- Upload Zone -->
+        <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+            </svg>
+            <h3>Kéo thả hoặc click để upload</h3>
+            <p>Hỗ trợ PNG, JPG, GIF, WEBP - Có thể chọn nhiều file cùng lúc</p>
+            <input type="file" id="file-input" multiple accept="image/*" style="display:none"
+                onchange="handleFileSelect(event)">
+        </div>
+
+        <!-- Stats Bar -->
+        <div class="stats-bar" id="stats-bar">
+            <div class="stat-item">
+                <div class="stat-value" id="stat-total">0</div>
+                <div class="stat-label">Tổng số file</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="stat-used">0</div>
+                <div class="stat-label">Đã sử dụng</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="stat-unused">0</div>
+                <div class="stat-label">Chưa sử dụng</div>
+            </div>
+        </div>
+
+        <!-- Filter Bar -->
+        <div class="filter-bar">
+            <input type="text" id="search-input" placeholder="🔍 Tìm kiếm theo tên file..." oninput="filterMedia()">
+            <select id="filter-usage" onchange="filterMedia()">
+                <option value="all">Tất cả</option>
+                <option value="used">Đã sử dụng</option>
+                <option value="unused">Chưa sử dụng</option>
+            </select>
+            <select id="filter-source" onchange="filterMedia()">
+                <option value="all">Mọi nguồn</option>
+                <option value="upload">📤 Upload</option>
+                <option value="editor">✏️ Editor</option>
+                <option value="logo">🖼️ Logo</option>
+            </select>
+            <select id="filter-exam" onchange="filterMedia()">
+                <option value="all">Mọi Exam</option>
+            </select>
+            <div class="view-toggle">
+                <button id="grid-view-btn" class="view-btn active" onclick="setViewMode('grid')" title="Grid View">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="7" height="7"></rect>
+                        <rect x="14" y="3" width="7" height="7"></rect>
+                        <rect x="14" y="14" width="7" height="7"></rect>
+                        <rect x="3" y="14" width="7" height="7"></rect>
+                    </svg>
+                </button>
+                <button id="list-view-btn" class="view-btn" onclick="setViewMode('list')" title="List View">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="8" y1="6" x2="21" y2="6"></line>
+                        <line x1="8" y1="12" x2="21" y2="12"></line>
+                        <line x1="8" y1="18" x2="21" y2="18"></line>
+                        <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                        <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                        <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Bulk Actions -->
+        <div class="bulk-actions" id="bulk-actions">
+            <input type="checkbox" id="select-all" onchange="toggleSelectAll()">
+            <span id="selected-count">0 file đã chọn</span>
+            <button class="btn btn-danger btn-sm" onclick="deleteSelected()">🗑️ Xóa đã chọn</button>
+            <button class="btn btn-secondary btn-sm" onclick="clearSelection()">Bỏ chọn</button>
+        </div>
+
+        <!-- Media Grid -->
+        <div class="media-grid" id="media-grid">
+            <div class="loading">
+                <div class="spinner"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <script src="/js/media.js"></script>
+</body>
+
+</html>

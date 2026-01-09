@@ -14,15 +14,35 @@ const storage = multer.diskStorage({
         cb(null, uploadsDir);
     },
     filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        const uploadsDir = path.join(__dirname, '..', '..', 'uploads');
         const ext = path.extname(file.originalname);
-        cb(null, uniqueSuffix + ext);
+        // Read source from query params (more reliable than body with multer)
+        const source = req.query.source || 'upload';
+        const keepName = req.query.keepName === 'true';
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+
+        // If keepName is true (from media page), use original name with upload- prefix
+        if (keepName) {
+            let baseName = path.basename(file.originalname, ext);
+            let filename = `upload-${baseName}${ext}`;
+            // Handle duplicates
+            let counter = 1;
+            while (fs.existsSync(path.join(uploadsDir, filename))) {
+                filename = `upload-${baseName}_${counter}${ext}`;
+                counter++;
+            }
+            cb(null, filename);
+        } else {
+            // Use source prefix
+            const prefix = ['editor', 'logo'].includes(source) ? source : 'upload';
+            cb(null, `${prefix}-${uniqueSuffix}${ext}`);
+        }
     }
 });
 
 const upload = multer({
     storage,
-    limits: { fileSize: 500 * 1024 }, // 500KB max
+    limits: { fileSize: 2 * 1024 * 1024 }, // 2MB max
     fileFilter: (req, file, cb) => {
         const allowedTypes = /jpeg|jpg|png|gif|webp/;
         const ext = allowedTypes.test(path.extname(file.originalname).toLowerCase());
@@ -53,10 +73,10 @@ router.post('/', upload.single('image'), (req, res) => {
     }
 });
 
-// Upload base64 image (for paste)
+// Upload base64 image (for paste in editor)
 router.post('/base64', express.json({ limit: '1mb' }), (req, res) => {
     try {
-        const { image } = req.body;
+        const { image, source } = req.body;
         if (!image) {
             return res.status(400).json({ error: 'No image data' });
         }
@@ -76,8 +96,9 @@ router.post('/base64', express.json({ limit: '1mb' }), (req, res) => {
             return res.status(400).json({ error: 'Image too large (max 500KB)' });
         }
 
-        // Save file
-        const filename = `${Date.now()}-${Math.round(Math.random() * 1E9)}.${ext}`;
+        // Save file with source prefix
+        const prefix = ['editor', 'logo'].includes(source) ? source : 'editor';
+        const filename = `${prefix}-${Date.now()}-${Math.round(Math.random() * 1E9)}.${ext}`;
         const uploadsDir = path.join(__dirname, '..', '..', 'uploads');
         if (!fs.existsSync(uploadsDir)) {
             fs.mkdirSync(uploadsDir, { recursive: true });

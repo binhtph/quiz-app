@@ -127,7 +127,7 @@ async function handleLogoUpload(event) {
   formData.append('image', file);
 
   try {
-    const response = await fetch(`${API_URL}/upload`, {
+    const response = await fetch(`${API_URL}/upload?source=logo`, {
       method: 'POST',
       body: formData
     });
@@ -459,7 +459,7 @@ async function uploadAndInsertImage(file, targetInput) {
       const response = await fetch(`${API_URL}/upload/base64`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image: base64 })
+        body: JSON.stringify({ image: base64, source: 'editor' })
       });
       const data = await response.json();
 
@@ -1121,7 +1121,7 @@ document.getElementById('general-image-upload')?.addEventListener('change', asyn
   formData.append('image', file);
 
   try {
-    const res = await fetch(`${API_URL}/upload`, {
+    const res = await fetch(`${API_URL}/upload?source=editor`, {
       method: 'POST',
       body: formData
     });
