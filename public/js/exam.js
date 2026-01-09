@@ -234,7 +234,7 @@ function showQuestion(index) {
                 🚩 ${markedQuestions.has(index) ? 'Bỏ đánh dấu' : 'Đánh dấu'}
             </button>
         </div>
-        <div class="question-text">${escapeHtml(question.question)}</div>
+        <div class="question-text">${renderContent(question.question)}</div>
         ${questionContent}
         ${hasFeedback ? renderLearnFeedback(question) : ''}
         <div class="question-footer">
@@ -267,7 +267,7 @@ function renderSingleChoice(question, showFeedback) {
         return `
                     <div class="${classes}" ${disabled} onclick="selectSingleOption(${question.id}, '${escapeHtml(option).replace(/'/g, "\\'")}')">
                         <div class="option-radio"></div>
-                        <span>${escapeHtml(option)}</span>
+                        <span>${renderContent(option)}</span>
                     </div>
                 `;
     }).join('')}
@@ -294,7 +294,7 @@ function renderMultipleChoice(question, showFeedback) {
         return `
                     <div class="${classes}" ${disabled} onclick="toggleMultipleOption(${question.id}, '${escapeHtml(option).replace(/'/g, "\\'")}')">
                         <div class="option-checkbox">${isSelected ? '✓' : ''}</div>
-                        <span>${escapeHtml(option)}</span>
+                        <span>${renderContent(option)}</span>
                     </div>
                 `;
     }).join('')}
@@ -315,7 +315,7 @@ function renderDragDrop(question) {
                 <div class="drag-item" draggable="true" data-value="${escapeHtml(option)}">
                     <span class="drag-handle">⋮⋮</span>
                     <span class="drag-number">${i + 1}</span>
-                    <span>${escapeHtml(option)}</span>
+                    <span>${renderContent(option)}</span>
                 </div>
             `).join('')}
         </div>
@@ -345,8 +345,8 @@ function renderMatching(question, showFeedback) {
         }
         return `
                             <div class="${classes}" onclick="selectLeftItem('${escapeHtml(item).replace(/'/g, "\\'")}')">
-                                ${escapeHtml(item)}
-                                ${isMatched ? `<span style="margin-left:auto;font-size:0.8rem;color:var(--text-muted)">→ ${escapeHtml(userMatches[item])}</span>` : ''}
+                                ${renderContent(item)}
+                                ${isMatched ? `<span style="margin-left:auto;font-size:0.8rem;color:var(--text-muted)">→ ${renderContent(userMatches[item])}</span>` : ''}
                             </div>
                         `;
     }).join('')}
@@ -357,7 +357,7 @@ function renderMatching(question, showFeedback) {
                 <div class="matching-items" id="matching-right">
                     ${shuffledRight.map(item => {
         const isUsed = Object.values(userMatches).includes(item);
-        return `<div class="matching-item right-item ${isUsed ? 'matched' : ''}" onclick="selectRightItem('${escapeHtml(item).replace(/'/g, "\\'")}')">${escapeHtml(item)}</div>`;
+        return `<div class="matching-item right-item ${isUsed ? 'matched' : ''}" onclick="selectRightItem('${escapeHtml(item).replace(/'/g, "\\'")}')">${renderContent(item)}</div>`;
     }).join('')}
                 </div>
             </div>
@@ -378,8 +378,8 @@ function renderMatchingFeedback(question, userMatches) {
             <div style="display:flex;flex-direction:column;gap:0.5rem;">
                 ${results.map(r => `
                     <div class="matching-pair ${r.isCorrect ? 'correct' : 'incorrect'}">
-                        <span class="left">${escapeHtml(r.left)}</span><span class="arrow">→</span><span class="right">${escapeHtml(r.correct)}</span>
-                        ${!r.isCorrect ? `<span style="color:var(--danger);font-size:0.8rem;">(Bạn: ${r.user || 'chưa chọn'})</span>` : ''}
+                        <span class="left">${renderContent(r.left)}</span><span class="arrow">→</span><span class="right">${renderContent(r.correct)}</span>
+                        ${!r.isCorrect ? `<span style="color:var(--danger);font-size:0.8rem;">(Bạn: ${renderContent(r.user) || 'chưa chọn'})</span>` : ''}
                     </div>
                 `).join('')}
             </div>
@@ -406,8 +406,8 @@ function renderLearnFeedback(question) {
     return `
         <div class="learn-feedback ${isCorrect ? 'correct' : 'incorrect'}">
             <div class="learn-feedback-header">${isCorrect ? '✅ Chính xác!' : '❌ Chưa đúng'}</div>
-            ${!isCorrect ? `<div class="learn-feedback-answer"><strong>Đáp án đúng:</strong> ${escapeHtml(correctDisplay)}</div>` : ''}
-            ${question.notes ? `<div class="learn-feedback-notes"><strong>📝 Ghi chú:</strong> ${escapeHtml(question.notes)}</div>` : ''}
+            ${!isCorrect ? `<div class="learn-feedback-answer"><strong>Đáp án đúng:</strong> ${renderContent(correctDisplay)}</div>` : ''}
+            ${question.notes ? `<div class="learn-feedback-notes"><strong>📝 Ghi chú:</strong> ${renderContent(question.notes)}</div>` : ''}
         </div>
     `;
 }
@@ -514,9 +514,20 @@ async function submitExam() {
 
 function escapeHtml(t) {
     if (!t) return '';
+    if (typeof t !== 'string') return '';
     const d = document.createElement('div');
     d.textContent = t;
     return d.innerHTML;
+}
+
+function renderContent(text) {
+    if (!text) return '';
+    let html = escapeHtml(text);
+    // Replace ![alt](url) with <img src="url" alt="alt" class="content-image">
+    html = html.replace(/!\[(.*?)\]\((.*?)\)/g, (match, alt, url) => {
+        return `<div class="image-container"><img src="${url}" alt="${alt}" class="content-image"></div>`;
+    });
+    return html;
 }
 
 document.addEventListener('DOMContentLoaded', init);

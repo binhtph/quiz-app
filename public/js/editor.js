@@ -313,60 +313,71 @@ function parseImportText(text) {
   let currentQ = null;
 
   const typePatterns = {
-    order: /\[(Order|Sắp xếp)\]/i,
-    match: /\[(Match|Ghép cặp)\]/i
+    order: /\[(Order|Sắp xếp)\]/gi,
+    match: /\[(Match|Ghép cặp)\]/gi
   };
 
   for (let line of lines) {
-    // Check for Question: "1. Content"
-    const qMatch = line.match(/^(\d+)\.\s+(.+)/);
+    // Check for Question start: "1. Content" or just "1."
+    const qMatch = line.match(/^(\d+)\.\s*(.*)/);
     if (qMatch) {
       if (currentQ) finalizeParsedQuestion(currentQ, questions);
 
-      const content = qMatch[2];
+      const content = qMatch[2] || '';
       let type = 'single_choice'; // Default
 
       if (typePatterns.order.test(content)) type = 'drag_drop';
       else if (typePatterns.match.test(content)) type = 'matching';
 
       currentQ = {
-        question: content.replace(/\[.*?\]/g, '').trim(),
+        question: content.replace(typePatterns.order, '').replace(typePatterns.match, '').trim(),
         type,
         options: [],
-        correct_temp: [], // For MC/SC logic
+        correct_temp: [],
         order_num: questions.length + 1
       };
 
-      // If drag_drop or matching, use different storage structure if needed
       if (type === 'matching') currentQ.matches = [];
       continue;
     }
 
     if (!currentQ) continue;
 
-    if (currentQ.type === 'drag_drop') {
-      // Logic: "- Item"
-      if (line.startsWith('-')) {
-        currentQ.options.push(line.substring(1).trim());
-      }
-    } else if (currentQ.type === 'matching') {
-      // Logic: "- Left -> Right"
-      if (line.startsWith('-') && line.includes('->')) {
-        const parts = line.substring(1).split('->');
-        if (parts.length === 2) {
-          currentQ.matches.push({ left: parts[0].trim(), right: parts[1].trim() });
-        }
+    // Detect if this line is an option or match pair
+    const optMatch = line.match(/^([a-zA-Z])\.\s+(.+)/);
+    const isDDMatch = currentQ.type === 'drag_drop' && line.startsWith('-');
+    const isMatchingMatch = currentQ.type === 'matching' && line.startsWith('-') && line.includes('->');
+
+    if (optMatch && (currentQ.type === 'single_choice' || currentQ.type === 'multiple_choice')) {
+      const letter = optMatch[1];
+      const content = optMatch[2];
+      const isCorrect = letter === letter.toUpperCase();
+
+      currentQ.options.push(content);
+      if (isCorrect) currentQ.correct_temp.push(content);
+    } else if (isDDMatch) {
+      currentQ.options.push(line.substring(1).trim());
+    } else if (isMatchingMatch) {
+      const parts = line.substring(1).split('->');
+      if (parts.length === 2) {
+        currentQ.matches.push({ left: parts[0].trim(), right: parts[1].trim() });
       }
     } else {
-      // SC/MC: "a. Content" or "A. Content"
-      const optMatch = line.match(/^([a-zA-Z])\.\s+(.+)/);
-      if (optMatch) {
-        const letter = optMatch[1];
-        const content = optMatch[2];
-        const isCorrect = letter === letter.toUpperCase(); // A vs a
+      // If it doesn't match an option pattern, it's part of the question content (multiline)
+      if (currentQ.question) {
+        currentQ.question += '\n' + line;
+      } else {
+        currentQ.question = line;
+      }
 
-        currentQ.options.push(content);
-        if (isCorrect) currentQ.correct_temp.push(content);
+      // Re-detect type if tags appear in subsequent lines
+      if (typePatterns.order.test(line)) {
+        currentQ.type = 'drag_drop';
+        currentQ.question = currentQ.question.replace(typePatterns.order, '').trim();
+      } else if (typePatterns.match.test(line)) {
+        currentQ.type = 'matching';
+        if (!currentQ.matches) currentQ.matches = [];
+        currentQ.question = currentQ.question.replace(typePatterns.match, '').trim();
       }
     }
   }
@@ -505,7 +516,7 @@ function renderQuestionList() {
          onclick="selectQuestion(${q.id})">
       <span class="drag-handle" style="cursor: move; margin-right: 0.5rem; color: #ccc;">⋮⋮</span>
       <span class="order">${i + 1}</span>
-      <span class="content">${escapeHtml(q.question)}</span>
+      <span class="content">${escapeHtml(q.question).replace(/!\[.*?\]\(.*?\)/g, '🖼️ Hình ảnh')}</span>
       <span class="type">${typeLabels[q.type] || q.type}</span>
       <button class="btn-icon delete" onclick="event.stopPropagation(); deleteQuestion(${q.id})">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -606,8 +617,12 @@ function renderQuestionEditor(question) {
       </div>
       
       <div class="form-group">
-        <label>Câu hỏi</label>
-        <textarea id="edit-question" class="form-control" required>${escapeHtml(question.question)}</textarea>
+        <div class="flex justify-between items-center mb-1">
+          <label>Câu hỏi</label>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="triggerImageUpload('edit-question')">📷 Chèn ảnh</button>
+        </div>
+        <textarea id="edit-question" class="form-control" required oninput="document.getElementById('q-preview').innerHTML = renderContent(this.value)">${escapeHtml(question.question)}</textarea>
+        <div id="q-preview" class="question-preview-box mt-2">${renderContent(question.question)}</div>
       </div>
       
       ${(question.type === 'multiple_choice' || question.type === 'single_choice') ? renderMCEditor(question) :
@@ -615,7 +630,10 @@ function renderQuestionEditor(question) {
         renderMatchingEditor(question)}
       
       <div class="form-group">
-        <label class="notes-label">Ghi chú (hiển thị trong Learn Mode)</label>
+        <div class="flex justify-between items-center mb-1">
+          <label class="notes-label">Ghi chú (hiển thị trong Learn Mode)</label>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="triggerImageUpload('edit-notes')">📷 Chèn ảnh</button>
+        </div>
         <textarea id="edit-notes" class="form-control notes-input" placeholder="Thêm ghi chú giải thích đáp án...">${escapeHtml(question.notes || '')}</textarea>
       </div>
       
@@ -633,9 +651,15 @@ function renderMCEditor(question) {
   let correctArr = [];
 
   if (isMultiple) {
-    try {
-      correctArr = JSON.parse(question.correct_answer);
-    } catch (e) { correctArr = []; }
+    if (Array.isArray(question.correct_answer)) {
+      correctArr = question.correct_answer;
+    } else {
+      try {
+        correctArr = JSON.parse(question.correct_answer);
+      } catch (e) {
+        correctArr = [];
+      }
+    }
   }
 
   return `
@@ -758,7 +782,7 @@ async function updateQuestionInline(event, id) {
         alert('Vui lòng chọn ít nhất một đáp án đúng!');
         return;
       }
-      correct_answer = JSON.stringify([...selected].map(cb => options[parseInt(cb.value)]));
+      correct_answer = [...selected].map(cb => options[parseInt(cb.value)]);
     } else {
       // Radio (single choice)
       const selectedRadio = document.querySelector('input[name="edit-correct"]:checked');
@@ -821,6 +845,7 @@ function openQuestionModal() {
   matchingPairs = [{ left: '', right: '' }, { left: '', right: '' }];
 
   toggleQuestionType();
+  document.getElementById('q-add-preview').innerHTML = '';
   document.getElementById('question-modal').classList.add('active');
 }
 
@@ -1072,6 +1097,47 @@ function escapeHtml(text) {
   div.textContent = text;
   return div.innerHTML;
 }
+
+function renderContent(text) {
+  if (!text) return '';
+  let html = escapeHtml(text);
+  html = html.replace(/!\[(.*?)\]\((.*?)\)/g, (match, alt, url) => {
+    return `<div class="image-container"><img src="${url}" alt="${alt}" class="content-image"></div>`;
+  });
+  return html;
+}
+
+let activeImageTarget = null;
+function triggerImageUpload(targetId) {
+  activeImageTarget = document.getElementById(targetId);
+  document.getElementById('general-image-upload').click();
+}
+
+document.getElementById('general-image-upload')?.addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file || !activeImageTarget) return;
+
+  const formData = new FormData();
+  formData.append('image', file);
+
+  try {
+    const res = await fetch(`${API_URL}/upload`, {
+      method: 'POST',
+      body: formData
+    });
+    const data = await res.json();
+    if (data.success) {
+      const cursorPos = activeImageTarget.selectionStart;
+      const text = activeImageTarget.value;
+      const insert = `\n![Image](${data.url})\n`;
+      activeImageTarget.value = text.slice(0, cursorPos) + insert + text.slice(cursorPos);
+      activeImageTarget.dispatchEvent(new Event('input'));
+    } else {
+      alert(data.error || 'Upload failed');
+    }
+  } catch (err) { alert('Upload error'); }
+  e.target.value = '';
+});
 
 // Close modal on overlay click
 document.getElementById('question-modal')?.addEventListener('click', (e) => {

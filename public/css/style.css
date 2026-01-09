@@ -1863,3 +1863,41 @@ select.form-control {
     grid-template-columns: 1fr;
   }
 }
+
+/* ===== Image Support ===== */
+.content-image {
+  max-width: 100%;
+  max-height: 500px;
+  border-radius: var(--radius-sm);
+  margin: 1rem 0;
+  cursor: zoom-in;
+  transition: transform 0.2s;
+}
+
+.content-image:hover {
+  transform: scale(1.02);
+}
+
+.image-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  margin: 1rem 0;
+}
+
+.question-preview-box {
+  padding: 1rem;
+  background: var(--bg);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  color: var(--text);
+  min-height: 50px;
+}
+
+.question-preview-box:empty::before {
+  content: 'Xem trước nội dung tại đây...';
+  color: var(--text-muted);
+  font-style: italic;
+}

@@ -131,49 +131,49 @@
         return `
             <div class="review-item ${r.is_correct ? 'correct' : 'incorrect'} ${isMarked ? 'marked' : ''}">
               <div class="review-question">
-                <strong>Câu ${originalIndex + 1}:</strong> ${escapeHtml(r.question)}
+                <strong>Câu ${originalIndex + 1}:</strong> ${renderContent(r.question)}
                 ${isMarked ? '<span class="marked-badge">🚩</span>' : ''}
               </div>
               <div class="review-answers">
                 ${r.type === 'drag_drop' ? `
                   <div class="review-answer user">
-                    <span>Đáp án của bạn:</span> ${Array.isArray(r.user_answer) ? r.user_answer.map(escapeHtml).join(' → ') : 'Chưa trả lời'}
+                    <span>Đáp án của bạn:</span> ${Array.isArray(r.user_answer) ? r.user_answer.map(renderContent).join(' → ') : 'Chưa trả lời'}
                   </div>
                   <div class="review-answer correct">
-                    <span>Đáp án đúng:</span> ${r.correct_answer.map(escapeHtml).join(' → ')}
+                    <span>Đáp án đúng:</span> ${r.correct_answer.map(renderContent).join(' → ')}
                   </div>
                 ` : r.type === 'matching' ? `
                   <div class="review-answer user">
-                    <span>Đáp án của bạn:</span> ${r.user_answer ? Object.entries(r.user_answer).map(([k, v]) => `${escapeHtml(k)} → ${escapeHtml(v)}`).join(', ') : 'Chưa trả lời'}
+                    <span>Đáp án của bạn:</span> ${r.user_answer ? Object.entries(r.user_answer).map(([k, v]) => `${renderContent(k)} → ${renderContent(v)}`).join(', ') : 'Chưa trả lời'}
                   </div>
                   <div class="review-answer correct">
-                    <span>Đáp án đúng:</span> ${Object.entries(r.correct_answer).map(([k, v]) => `${escapeHtml(k)} → ${escapeHtml(v)}`).join(', ')}
+                    <span>Đáp án đúng:</span> ${Object.entries(r.correct_answer).map(([k, v]) => `${renderContent(k)} → ${renderContent(v)}`).join(', ')}
                   </div>
                 ` : r.type === 'multiple_choice' ? `
                   <div class="review-answer user">
-                    <span>Đáp án của bạn:</span> ${Array.isArray(r.user_answer) ? r.user_answer.map(escapeHtml).join(', ') : 'Chưa trả lời'}
+                    <span>Đáp án của bạn:</span> ${Array.isArray(r.user_answer) ? r.user_answer.map(renderContent).join(', ') : 'Chưa trả lời'}
                     ${r.is_correct ? '✅' : '❌'}
                   </div>
                   ${!r.is_correct ? `
                     <div class="review-answer correct">
-                      <span>Đáp án đúng:</span> ${r.correct_answer.map(escapeHtml).join(', ')} ✅
+                      <span>Đáp án đúng:</span> ${r.correct_answer.map(renderContent).join(', ')} ✅
                     </div>
                   ` : ''}
                 ` : `
                   <div class="review-answer user">
-                    <span>Đáp án của bạn:</span> ${r.user_answer ? escapeHtml(r.user_answer) : 'Chưa trả lời'}
+                    <span>Đáp án của bạn:</span> ${r.user_answer ? renderContent(r.user_answer) : 'Chưa trả lời'}
                     ${r.is_correct ? '✅' : '❌'}
                   </div>
                   ${!r.is_correct ? `
                     <div class="review-answer correct">
-                      <span>Đáp án đúng:</span> ${escapeHtml(r.correct_answer)} ✅
+                      <span>Đáp án đúng:</span> ${renderContent(r.correct_answer)} ✅
                     </div>
                   ` : ''}
                 `}
               </div>
               ${r.notes ? `
                 <div class="review-notes">
-                  <strong>💡 Ghi chú:</strong> ${escapeHtml(r.notes)}
+                  <strong>💡 Ghi chú:</strong> ${renderContent(r.notes)}
                 </div>
               ` : ''}
             </div>
@@ -192,6 +192,17 @@
       const div = document.createElement('div');
       div.textContent = text;
       return div.innerHTML;
+    }
+
+    function renderContent(text) {
+      if (!text) return '';
+      if (typeof text !== 'string') return text;
+      let html = escapeHtml(text);
+      // Replace ![alt](url) with <img src="url" alt="alt" class="content-image">
+      html = html.replace(/!\[(.*?)\]\((.*?)\)/g, (match, alt, url) => {
+        return `<div class="image-container"><img src="${url}" alt="${alt}" class="content-image"></div>`;
+      });
+      return html;
     }
 
     document.addEventListener('DOMContentLoaded', init);
