@@ -577,22 +577,58 @@ function changeQuestionType(newType) {
 
   if (q.type === newType) return;
 
+  const oldType = q.type;
+  const isScMcSwitch = ['single_choice', 'multiple_choice'].includes(oldType) &&
+    ['single_choice', 'multiple_choice'].includes(newType);
+
+  // SC <-> MC: preserve options, only adjust correct_answer format
+  if (isScMcSwitch) {
+    q.type = newType;
+
+    // Convert correct_answer between formats
+    if (newType === 'multiple_choice') {
+      // SC -> MC: wrap single answer in array
+      if (q.correct_answer && !Array.isArray(q.correct_answer)) {
+        try {
+          q.correct_answer = JSON.parse(q.correct_answer);
+        } catch {
+          q.correct_answer = q.correct_answer ? [q.correct_answer] : [];
+        }
+      }
+      if (!Array.isArray(q.correct_answer)) {
+        q.correct_answer = q.correct_answer ? [q.correct_answer] : [];
+      }
+    } else {
+      // MC -> SC: take first selected answer
+      let answers = q.correct_answer;
+      if (typeof answers === 'string') {
+        try { answers = JSON.parse(answers); } catch { answers = []; }
+      }
+      q.correct_answer = Array.isArray(answers) && answers.length > 0 ? answers[0] : '';
+    }
+
+    renderQuestionEditor(q);
+    renderQuestionList();
+    return;
+  }
+
+  // Different type: confirm and reset data
   if (confirm('Đổi loại câu hỏi sẽ xóa dữ liệu đáp án cũ. Bạn có chắc không?')) {
     q.type = newType;
     // Reset data defaults
     if (newType === 'matching') {
       q.options = { left: [], right: [] };
       q.correct_answer = {};
-    } else if (newType === 'drag_drop') { // DD uses options
+    } else if (newType === 'drag_drop') {
       q.options = [];
       q.correct_answer = [];
     } else { // MC/SC
       q.options = [];
-      if (newType === 'multiple_choice') q.correct_answer = []; // JSON stringified later
+      if (newType === 'multiple_choice') q.correct_answer = [];
       else q.correct_answer = '';
     }
     renderQuestionEditor(q);
-    renderQuestionList(); // Update Type Label in list
+    renderQuestionList();
   } else {
     // Revert select
     document.getElementById('edit-type').value = q.type;
