@@ -18,12 +18,8 @@ function updateWelcomeName() {
 }
 
 function openFooterAction() {
-    const savedName = localStorage.getItem('userName');
-    if (savedName) {
-        showGlobalHistory(savedName);
-    } else {
-        openNameModal();
-    }
+    const savedName = localStorage.getItem('userName') || 'Bạn';
+    showGlobalHistory(savedName);
 }
 
 async function showGlobalHistory(userName) {
@@ -36,8 +32,15 @@ async function showGlobalHistory(userName) {
 
         content.innerHTML = `
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                <h3 style="margin:0">📊 Lịch sử thi của ${escapeHtml(userName)}</h3>
-                <button class="btn btn-secondary btn-sm" onclick="openNameModal()">Đổi tên</button>
+                <h3 style="margin:0; display: flex; align-items: center; gap: 0.5rem;">
+                    📊 Lịch sử thi của 
+                    <input type="text" id="inline-name-input" value="${escapeHtml(userName)}" 
+                           style="border: 1px solid transparent; background: transparent; font-size: inherit; font-weight: inherit; padding: 0.25rem 0.5rem; border-radius: var(--radius-sm); min-width: 100px; max-width: 200px;"
+                           onblur="saveInlineName(this)"
+                           onkeydown="if(event.key==='Enter'){this.blur();}"
+                           onfocus="this.style.borderColor='var(--primary)'; this.style.background='var(--bg-secondary)';"
+                           title="Click để đổi tên">
+                </h3>
             </div>
             <div class="history-list">
                 ${data.history.length === 0 ? '<p class="text-muted">Bạn chưa hoàn thành bài thi nào.</p>' :
@@ -68,45 +71,33 @@ async function showGlobalHistory(userName) {
     }
 }
 
-function openNameModal() {
-    const savedName = localStorage.getItem('userName') || '';
-    document.getElementById('name-edit-input').value = savedName;
-    document.getElementById('name-modal').classList.add('active');
-    document.getElementById('name-edit-input').focus();
-}
+async function saveInlineName(input) {
+    input.style.borderColor = 'transparent';
+    input.style.background = 'transparent';
 
-function closeNameModal() {
-    document.getElementById('name-modal').classList.remove('active');
-}
-
-async function saveName() {
-    const newName = document.getElementById('name-edit-input').value.trim();
+    const newName = input.value.trim();
     const oldName = localStorage.getItem('userName');
 
-    // Update name in database if old name exists
-    if (oldName && newName && oldName !== newName) {
+    if (!newName) {
+        input.value = oldName || '';
+        return;
+    }
+
+    if (oldName && oldName !== newName) {
         try {
             await fetch(`${API_URL}/exams/update-name`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ old_name: oldName, new_name: newName })
             });
-            // Reload exams to reflect updated leaderboards
             loadExams();
         } catch (error) {
             console.error('Failed to update name in history:', error);
         }
     }
 
-    // Save to localStorage
-    if (newName) {
-        localStorage.setItem('userName', newName);
-    } else {
-        localStorage.removeItem('userName');
-    }
-
+    localStorage.setItem('userName', newName);
     updateWelcomeName();
-    closeNameModal();
 }
 
 // ===== View Toggle =====
@@ -486,14 +477,6 @@ document.getElementById('pin-input')?.addEventListener('input', (e) => {
 
 document.getElementById('delete-pin-input')?.addEventListener('input', (e) => {
     if (e.target.value.length === 4) confirmDelete();
-});
-
-document.getElementById('name-modal')?.addEventListener('click', (e) => {
-    if (e.target.classList.contains('modal-overlay')) closeNameModal();
-});
-
-document.getElementById('name-edit-input')?.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') saveName();
 });
 
 // Initialize
