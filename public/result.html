@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kết quả - Quiz App</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+
+<body>
+  <div class="container">
+    <header class="header">
+      <h1>
+        <a href="/">📝 Quiz App</a>
+      </h1>
+    </header>
+
+    <main id="result-container" class="result-container">
+      <div class="loading">
+        <div class="spinner"></div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    let showMarkedOnly = false;
+    let resultData = null;
+
+    function init() {
+      const storedData = sessionStorage.getItem('examResult');
+      if (!storedData) {
+        window.location.href = '/';
+        return;
+      }
+
+      resultData = JSON.parse(storedData);
+      renderResult();
+
+      // Show personal record notification if applicable
+      if (resultData.is_new_record) {
+        setTimeout(() => {
+          if (window.showRecordTicker) {
+            window.showRecordTicker(
+              `🎉 Chúc mừng! Bạn đã lập kỷ lục mới: ${resultData.score}/${resultData.total} (${resultData.percentage}%) - ${resultData.examTitle}`,
+              true
+            );
+          }
+        }, 500);
+      }
+    }
+
+    function renderResult() {
+      const result = resultData;
+      const container = document.getElementById('result-container');
+      const markedIds = result.markedQuestionIds || [];
+
+      // Filter results based on toggle
+      const displayResults = showMarkedOnly
+        ? result.results.filter(r => markedIds.includes(r.question_id))
+        : result.results;
+
+      // Determine score class
+      let scoreClass = 'fail';
+      let message = 'Cần cố gắng thêm!';
+      if (result.percentage >= 90) {
+        scoreClass = 'excellent';
+        message = 'Xuất sắc! 🎉';
+      } else if (result.percentage >= 70) {
+        scoreClass = 'good';
+        message = 'Tốt lắm! 👍';
+      } else if (result.percentage >= 50) {
+        scoreClass = 'pass';
+        message = 'Đạt yêu cầu';
+      }
+
+      // Format time
+      const minutes = Math.floor(result.timeTaken / 60);
+      const seconds = result.timeTaken % 60;
+      const timeStr = `${minutes}:${String(seconds).padStart(2, '0')}`;
+
+      // Get original indices for question numbers
+      const getOriginalIndex = (questionId) => {
+        return result.results.findIndex(r => r.question_id === questionId);
+      };
+
+      container.innerHTML = `
+        <h2>${escapeHtml(result.examTitle)}</h2>
+        
+        <div class="score-circle ${scoreClass}">
+          <span class="score-value">${result.percentage}%</span>
+          <span class="score-label">${message}</span>
+        </div>
+
+        <div class="result-summary">
+          <div class="summary-item">
+            <div class="value">${result.score}/${result.total}</div>
+            <div class="label">Số câu đúng</div>
+          </div>
+          <div class="summary-item">
+            <div class="value">${timeStr}</div>
+            <div class="label">Thời gian</div>
+          </div>
+        </div>
+
+        <div class="result-actions">
+          <a href="/" class="btn btn-secondary">Về trang chủ</a>
+          <a href="/exam.html?id=${new URLSearchParams(window.location.search).get('id') || ''}" class="btn btn-primary" onclick="sessionStorage.removeItem('examResult')">Làm lại</a>
+        </div>
+
+        <div class="review-list">
+          <div class="review-header">
+            <h3>Chi tiết kết quả</h3>
+            ${markedIds.length > 0 ? `
+              <button class="btn btn-sm ${showMarkedOnly ? 'btn-primary' : 'btn-secondary'}" onclick="toggleMarkedFilter()">
+                🚩 ${showMarkedOnly ? 'Xem tất cả' : `Câu đánh dấu (${markedIds.length})`}
+              </button>
+            ` : ''}
+          </div>
+          
+          ${displayResults.length === 0 ? `
+            <div class="empty-state" style="padding: 2rem; text-align: center;">
+              <p>Không có câu nào được đánh dấu</p>
+            </div>
+          ` : displayResults.map(r => {
+        const originalIndex = getOriginalIndex(r.question_id);
+        const isMarked = markedIds.includes(r.question_id);
+        return `
+            <div class="review-item ${r.is_correct ? 'correct' : 'incorrect'} ${isMarked ? 'marked' : ''}">
+              <div class="review-question">
+                <strong>Câu ${originalIndex + 1}:</strong> ${escapeHtml(r.question)}
+                ${isMarked ? '<span class="marked-badge">🚩</span>' : ''}
+              </div>
+              <div class="review-answers">
+                ${r.type === 'drag_drop' ? `
+                  <div class="review-answer user">
+                    <span>Đáp án của bạn:</span> ${Array.isArray(r.user_answer) ? r.user_answer.map(escapeHtml).join(' → ') : 'Chưa trả lời'}
+                  </div>
+                  <div class="review-answer correct">
+                    <span>Đáp án đúng:</span> ${r.correct_answer.map(escapeHtml).join(' → ')}
+                  </div>
+                ` : r.type === 'matching' ? `
+                  <div class="review-answer user">
+                    <span>Đáp án của bạn:</span> ${r.user_answer ? Object.entries(r.user_answer).map(([k, v]) => `${escapeHtml(k)} → ${escapeHtml(v)}`).join(', ') : 'Chưa trả lời'}
+                  </div>
+                  <div class="review-answer correct">
+                    <span>Đáp án đúng:</span> ${Object.entries(r.correct_answer).map(([k, v]) => `${escapeHtml(k)} → ${escapeHtml(v)}`).join(', ')}
+                  </div>
+                ` : r.type === 'multiple_choice' ? `
+                  <div class="review-answer user">
+                    <span>Đáp án của bạn:</span> ${Array.isArray(r.user_answer) ? r.user_answer.map(escapeHtml).join(', ') : 'Chưa trả lời'}
+                    ${r.is_correct ? '✅' : '❌'}
+                  </div>
+                  ${!r.is_correct ? `
+                    <div class="review-answer correct">
+                      <span>Đáp án đúng:</span> ${r.correct_answer.map(escapeHtml).join(', ')} ✅
+                    </div>
+                  ` : ''}
+                ` : `
+                  <div class="review-answer user">
+                    <span>Đáp án của bạn:</span> ${r.user_answer ? escapeHtml(r.user_answer) : 'Chưa trả lời'}
+                    ${r.is_correct ? '✅' : '❌'}
+                  </div>
+                  ${!r.is_correct ? `
+                    <div class="review-answer correct">
+                      <span>Đáp án đúng:</span> ${escapeHtml(r.correct_answer)} ✅
+                    </div>
+                  ` : ''}
+                `}
+              </div>
+              ${r.notes ? `
+                <div class="review-notes">
+                  <strong>💡 Ghi chú:</strong> ${escapeHtml(r.notes)}
+                </div>
+              ` : ''}
+            </div>
+          `}).join('')}
+        </div>
+      `;
+    }
+
+    function toggleMarkedFilter() {
+      showMarkedOnly = !showMarkedOnly;
+      renderResult();
+    }
+
+    function escapeHtml(text) {
+      if (text === null || text === undefined) return '';
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+  <script src="/js/ticker.js"></script>
+</body>
+
+</html>

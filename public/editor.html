@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chỉnh sửa Exam - Quiz App</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>
+                <a href="/">📝 Quiz App</a>
+                <span style="font-weight: 400; font-size: 1rem; color: var(--text-muted);"> / Chỉnh sửa</span>
+            </h1>
+            <div class="flex gap-2">
+                <a href="/" class="btn btn-secondary">← Quay lại</a>
+                <button class="btn btn-secondary" onclick="openImportModal()">📥 Import</button>
+                <button class="btn btn-secondary" onclick="openExportModal()">📤 Export</button>
+                <button class="btn btn-primary" onclick="openQuestionModal()">+ Thêm câu hỏi</button>
+            </div>
+        </header>
+
+        <!-- Import Modal -->
+        <div id="import-modal" class="modal-overlay">
+            <div class="modal" style="max-width: 700px;">
+                <div class="modal-header">
+                    <h2>Nhập câu hỏi từ văn bản</h2>
+                    <button class="btn-icon" onclick="closeImportModal()">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-2 text-sm text-muted">Hỗ trợ định dạng:</p>
+                    <ul class="mb-4 text-sm text-muted" style="list-style: disc; padding-left: 1.5rem;">
+                        <li><b>Trắc nghiệm:</b> "1. Câu hỏi..." tiếp theo là "a. sai", "B. ĐÚNG", "c. sai".</li>
+                        <li><b>Sắp xếp:</b> "2. [Order] Câu hỏi..." tiếp theo là "- Mục 1", "- Mục 2" (thứ tự đúng).
+                        </li>
+                        <li><b>Ghép cặp:</b> "3. [Match] Câu hỏi..." tiếp theo là "- Trái -> Phải".</li>
+                    </ul>
+                    <textarea id="import-text" class="form-control" style="height: 300px; font-family: monospace;"
+                        placeholder="Dán nội dung câu hỏi vào đây..."></textarea>
+
+                    <div class="checkbox-group" style="margin-top: 1rem;">
+                        <input type="checkbox" id="import-clear-old">
+                        <label for="import-clear-old" style="color: var(--danger);">Xóa toàn bộ câu hỏi cũ trước khi
+                            nhập</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeImportModal()">Hủy</button>
+                    <button type="button" class="btn btn-primary" onclick="processImport()">Nhập câu hỏi</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Export Modal -->
+        <div id="export-modal" class="modal-overlay">
+            <div class="modal" style="max-width: 700px;">
+                <div class="modal-header">
+                    <h2>Xuất nội dung Exam</h2>
+                    <button class="btn-icon" onclick="closeExportModal()">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="tabs"
+                        style="margin-bottom: 1rem; display: flex; gap: 1rem; border-bottom: 1px solid #eee; padding-bottom: 0.5rem;">
+                        <button class="btn-link active" onclick="switchExportTab('text')">Text Format</button>
+                        <button class="btn-link" onclick="switchExportTab('json')">JSON Format</button>
+                    </div>
+
+                    <div id="export-tab-text">
+                        <p class="text-sm text-muted mb-2">Định dạng Text (dùng để sửa nhanh và Import lại):</p>
+                        <textarea id="export-text" class="form-control" style="height: 300px; font-family: monospace;"
+                            readonly></textarea>
+                    </div>
+
+                    <div id="export-tab-json" class="hidden">
+                        <p class="text-sm text-muted mb-2">Định dạng JSON đầy đủ (dùng để backup):</p>
+                        <textarea id="export-json" class="form-control" style="height: 300px; font-family: monospace;"
+                            readonly></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeExportModal()">Đóng</button>
+                    <button type="button" class="btn btn-primary" id="btn-copy-export" onclick="copyExport()">Sao chép
+                        Text</button>
+                    <button type="button" class="btn btn-success" id="btn-download-json" onclick="downloadJSON()"
+                        style="display:none;">Tải file JSON</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Exam Info -->
+        <div class="card mb-3" id="exam-info">
+            <div class="loading">
+                <div class="spinner"></div>
+            </div>
+        </div>
+
+        <!-- Editor Layout -->
+        <div class="editor-layout">
+            <!-- Question List -->
+            <div class="question-list">
+                <div class="question-list-header">
+                    <h3>Danh sách câu hỏi</h3>
+                </div>
+                <div id="question-list-items" class="question-list-items">
+                    <div class="empty-state">
+                        <p>Chưa có câu hỏi nào</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Question Editor -->
+            <div id="question-editor" class="question-editor">
+                <div class="empty-state">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <path
+                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                    <h3>Chọn câu hỏi để chỉnh sửa</h3>
+                    <p>Hoặc thêm câu hỏi mới từ nút phía trên</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Question Modal -->
+    <div id="question-modal" class="modal-overlay">
+        <div class="modal" style="max-width: 600px;">
+            <div class="modal-header">
+                <h2 id="question-modal-title">Thêm câu hỏi</h2>
+                <button class="btn-icon" onclick="closeQuestionModal()">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <form id="question-form" onsubmit="saveQuestion(event)">
+                <div class="modal-body">
+                    <input type="hidden" id="q-id">
+
+                    <div class="form-group">
+                        <label for="q-type">Loại câu hỏi</label>
+                        <select id="q-type" class="form-control" onchange="toggleQuestionType()">
+                            <option value="single_choice">Chọn 1 đáp án (Single Choice)</option>
+                            <option value="multiple_choice">Chọn nhiều đáp án (Multiple Choice)</option>
+                            <option value="drag_drop">Kéo thả sắp xếp (Drag & Drop)</option>
+                            <option value="matching">Kéo thả ghép cặp (Matching)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="q-question">Câu hỏi *</label>
+                        <textarea id="q-question" class="form-control" placeholder="Nhập nội dung câu hỏi..."
+                            required></textarea>
+                    </div>
+
+                    <!-- Multiple Choice Options -->
+                    <div id="mc-options">
+                        <label>Các đáp án (chọn đáp án đúng)</label>
+                        <div id="options-editor" class="options-editor">
+                            <!-- Dynamically populated -->
+                        </div>
+                        <button type="button" class="btn btn-secondary btn-sm add-option-btn" onclick="addOption()">+
+                            Thêm đáp án</button>
+                    </div>
+
+                    <!-- Drag Drop Options -->
+                    <div id="dd-options" class="hidden">
+                        <label>Các mục cần sắp xếp (nhập theo thứ tự đúng)</label>
+                        <div id="dd-items-editor" class="options-editor">
+                            <!-- Dynamically populated -->
+                        </div>
+                        <button type="button" class="btn btn-secondary btn-sm add-option-btn" onclick="addDragItem()">+
+                            Thêm mục</button>
+                    </div>
+
+                    <!-- Matching Options -->
+                    <div id="matching-options" class="hidden">
+                        <label>Các cặp ghép (trái → phải)</label>
+                        <div id="matching-pairs-editor" class="options-editor">
+                            <!-- Dynamically populated -->
+                        </div>
+                        <button type="button" class="btn btn-secondary btn-sm add-option-btn"
+                            onclick="addMatchingPairModal()">+
+                            Thêm cặp</button>
+                    </div>
+
+                    <!-- Notes -->
+                    <div class="form-group" style="margin-top: 1rem;">
+                        <label class="notes-label">Ghi chú (hiển thị trong Learn Mode)</label>
+                        <textarea id="q-notes" class="form-control notes-input"
+                            placeholder="Thêm ghi chú giải thích đáp án..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeQuestionModal()">Hủy</button>
+                    <button type="submit" class="btn btn-primary">Lưu</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Exam Modal -->
+    <div id="edit-exam-modal" class="modal-overlay">
+        <div class="modal" style="max-width: 500px;">
+            <div class="modal-header">
+                <h2>Chỉnh sửa thông tin</h2>
+                <button class="btn-icon" onclick="closeEditExamModal()">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <form onsubmit="updateExamDetails(event)">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>Tên Exam</label>
+                        <input type="text" id="edit-exam-title" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Mô tả</label>
+                        <textarea id="edit-exam-desc" class="form-control"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Thời gian (phút)</label>
+                        <input type="number" id="edit-exam-time" class="form-control" min="1" max="180">
+                    </div>
+                    <div class="form-group">
+                        <label>PIN Code (để trống nếu không đổi)</label>
+                        <input type="text" id="edit-exam-pin" class="form-control" placeholder="****">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Logo (tùy chọn)</label>
+                        <div class="logo-upload" id="logo-upload">
+                            <input type="file" id="edit-exam-logo" accept="image/*" onchange="handleLogoUpload(event)"
+                                style="display:none">
+                            <div id="edit-logo-preview" class="logo-preview"
+                                onclick="document.getElementById('edit-exam-logo').click()">
+                                <span>📷 Click để chọn logo</span>
+                            </div>
+                        </div>
+                    </div>
+
+
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeEditExamModal()">Hủy</button>
+                    <button type="submit" class="btn btn-primary">Lưu</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="/js/ticker.js"></script>
+    <script src="/js/editor.js"></script>
+</body>
+
+</html>

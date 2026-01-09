@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Làm bài thi - Quiz App</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+
+<body>
+    <!-- Start Screen Overlay -->
+    <div id="start-screen" class="modal-overlay active"
+        style="z-index: 2000; background: var(--bg); opacity: 1; visibility: visible;">
+        <div class="container" style="max-width: 600px; margin-top: 10vh; text-align: center;">
+            <div class="card">
+                <div class="mb-4">
+                    <h1 id="start-title" style="font-size: 2rem; color: var(--primary);">Exam Title</h1>
+                    <p id="start-desc" class="text-muted mt-2" style="white-space: pre-line;">Description...</p>
+                </div>
+
+                <div class="settings-box"
+                    style="text-align: left; background: var(--bg-secondary); padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem;">
+                    <h3 class="mb-3">Tùy chọn thi</h3>
+
+                    <div class="checkbox-group mb-3">
+                        <input type="checkbox" id="opt-learn-mode">
+                        <label for="opt-learn-mode">
+                            <b>Chế độ Học (Learn Mode)</b>
+                            <p class="text-xs text-muted" style="margin-left: 1.8rem;">Hiển thị đáp án ngay sau khi chọn
+                            </p>
+                        </label>
+                    </div>
+
+                    <div class="checkbox-group mb-3">
+                        <input type="checkbox" id="opt-shuffle-q">
+                        <label for="opt-shuffle-q">
+                            <b>Xáo trộn câu hỏi</b>
+                            <p class="text-xs text-muted" style="margin-left: 1.8rem;">Thay đổi thứ tự câu hỏi ngẫu
+                                nhiên</p>
+                        </label>
+                    </div>
+
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="opt-shuffle-a">
+                        <label for="opt-shuffle-a">
+                            <b>Xáo trộn đáp án</b>
+                            <p class="text-xs text-muted" style="margin-left: 1.8rem;">Thay đổi thứ tự các lựa chọn</p>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="flex flex-col gap-2">
+                    <button class="btn btn-primary btn-lg" onclick="startExamSession()">🚀 Bắt đầu làm bài</button>
+                    <a href="/" class="btn btn-link text-muted">Quay lại trang chủ</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Exam Header -->
+    <header class="exam-header">
+        <a href="/" class="btn btn-secondary btn-sm">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 12H5M12 19l-7-7 7-7" />
+            </svg>
+            Thoát
+        </a>
+
+        <div class="progress-bar">
+            <div id="progress-fill" class="progress-fill" style="width: 0%"></div>
+        </div>
+
+        <div id="timer" class="timer">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+            <span id="timer-display">00:00</span>
+        </div>
+    </header>
+
+    <!-- Exam Content -->
+    <div class="exam-content">
+        <!-- Sidebar -->
+        <aside class="question-sidebar">
+            <h3 class="mb-2">Câu hỏi</h3>
+            <div id="question-nav" class="question-nav">
+                <!-- Dynamically populated -->
+            </div>
+            <button id="submit-btn" class="btn btn-success" style="width: 100%; margin-top: 1.5rem"
+                onclick="submitExam()">
+                Nộp bài
+            </button>
+        </aside>
+
+        <!-- Main Question Area -->
+        <main class="question-main">
+            <div id="question-card" class="question-card">
+                <div class="loading">
+                    <div class="spinner"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="/js/ticker.js"></script>
+    <script src="/js/exam.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,15 @@
+services:
+  quiz-app:
+    build: .
+    container_name: quiz-app
+    ports:
+      - "3000:3000"
+    volumes:
+      - quiz-data:/app/data
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - DB_PATH=/app/data/quiz.db
+
+volumes:
+  quiz-data:

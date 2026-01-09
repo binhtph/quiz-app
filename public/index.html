@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quiz App - Ứng Dụng Trắc Nghiệm</title>
+  <meta name="description" content="Ứng dụng làm bài trắc nghiệm trực tuyến với nhiều loại câu hỏi">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+
+<body>
+  <div class="container">
+    <header class="header">
+      <h1>
+        <a href="/">📝 Quiz App</a>
+      </h1>
+      <div class="flex gap-2 items-center">
+        <!-- View Toggle -->
+        <div class="view-toggle">
+          <button id="grid-view-btn" class="view-btn active" onclick="setViewMode('grid')" title="Grid View">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="7" height="7"></rect>
+              <rect x="14" y="3" width="7" height="7"></rect>
+              <rect x="14" y="14" width="7" height="7"></rect>
+              <rect x="3" y="14" width="7" height="7"></rect>
+            </svg>
+          </button>
+          <button id="list-view-btn" class="view-btn" onclick="setViewMode('list')" title="List View">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="8" y1="6" x2="21" y2="6"></line>
+              <line x1="8" y1="12" x2="21" y2="12"></line>
+              <line x1="8" y1="18" x2="21" y2="18"></line>
+              <line x1="3" y1="6" x2="3.01" y2="6"></line>
+              <line x1="3" y1="12" x2="3.01" y2="12"></line>
+              <line x1="3" y1="18" x2="3.01" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+        <button class="btn btn-primary" onclick="openCreateExamModal()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          Tạo Exam Mới
+        </button>
+      </div>
+    </header>
+
+    <main id="exam-grid" class="exam-grid">
+      <div class="loading">
+        <div class="spinner"></div>
+      </div>
+    </main>
+
+    <!-- Welcome Footer -->
+    <footer class="welcome-footer" onclick="openFooterAction()">
+      <span id="welcome-text">👋 Chào, <span id="user-display-name">Chưa đặt tên</span></span>
+      <span class="edit-hint">✏️ Click để đổi tên</span>
+    </footer>
+  </div>
+
+  <!-- Name Edit Modal -->
+  <div id="name-modal" class="modal-overlay">
+    <div class="modal" style="max-width: 380px;">
+      <div class="modal-header">
+        <h2>👤 Đặt tên của bạn</h2>
+        <button class="btn-icon" onclick="closeNameModal()">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <input type="text" id="name-edit-input" class="form-control" placeholder="Nhập tên của bạn..." maxlength="50">
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeNameModal()">Hủy</button>
+        <button type="button" class="btn btn-primary" onclick="saveName()">Lưu</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Create/Edit Exam Modal -->
+  <div id="exam-modal" class="modal-overlay">
+    <div class="modal" style="max-width: 550px;">
+      <div class="modal-header">
+        <h2 id="modal-title">Tạo Exam Mới</h2>
+        <button class="btn-icon" onclick="closeExamModal()">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <form id="exam-form" onsubmit="saveExam(event)">
+        <div class="modal-body">
+          <input type="hidden" id="exam-id">
+          <div class="form-group">
+            <label for="exam-title">Tên Exam *</label>
+            <input type="text" id="exam-title" class="form-control" placeholder="Ví dụ: Kiểm tra Toán học kỳ 1"
+              required>
+          </div>
+          <div class="form-group">
+            <label for="exam-description">Mô tả</label>
+            <textarea id="exam-description" class="form-control" placeholder="Mô tả nội dung bài thi..."></textarea>
+          </div>
+          <div class="form-group">
+            <label for="exam-time">Thời gian (phút)</label>
+            <input type="number" id="exam-time" class="form-control" value="30" min="1" max="180">
+          </div>
+
+          <div class="form-group">
+            <label>Logo (tùy chọn)</label>
+            <div class="logo-upload" id="logo-upload">
+              <input type="file" id="exam-logo" accept="image/*" onchange="handleLogoUpload(event)"
+                style="display:none">
+              <div id="logo-preview" class="logo-preview" onclick="document.getElementById('exam-logo').click()">
+                <span>📷 Click để chọn logo</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeExamModal()">Hủy</button>
+          <button type="submit" class="btn btn-primary">Lưu</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Start Exam Modal -->
+  <div id="start-exam-modal" class="modal-overlay">
+    <div class="modal" style="max-width: 450px;">
+      <div class="modal-header">
+        <h2>Bắt đầu làm bài</h2>
+        <button class="btn-icon" onclick="closeStartExamModal()">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="user-name">Tên của bạn *</label>
+          <input type="text" id="user-name" class="form-control" placeholder="Nhập tên để lưu kết quả..." required>
+        </div>
+        <div class="form-group">
+          <div class="checkbox-group mb-4">
+            <input type="checkbox" id="start-learn-mode" onchange="toggleLearnModeNote(this)">
+            <label for="start-learn-mode">📚 Learn Mode</label>
+          </div>
+          <div id="learn-mode-note" class="text-sm text-muted hidden"
+            style="margin-top: -0.5rem; margin-bottom: 1.5rem; margin-left: 1.8rem;">
+            Hiện đáp án đúng và ghi chú khi trả lời sai.
+          </div>
+          <div class="checkbox-group">
+            <input type="checkbox" id="start-shuffle-q" onchange="toggleNote('shuffle-q-note', this)">
+            <label for="start-shuffle-q">🔀 Random câu hỏi</label>
+          </div>
+          <div id="shuffle-q-note" class="text-sm text-muted hidden"
+            style="margin-top: -0.25rem; margin-bottom: 1rem; margin-left: 1.8rem;">
+            Xáo trộn thứ tự các câu hỏi trong bài thi.
+          </div>
+          <div class="checkbox-group" style="margin-bottom: 0;">
+            <input type="checkbox" id="start-shuffle-a" onchange="toggleNote('shuffle-a-note', this)">
+            <label for="start-shuffle-a">🔀 Random đáp án</label>
+          </div>
+          <div id="shuffle-a-note" class="text-sm text-muted hidden"
+            style="margin-top: -0.25rem; margin-bottom: 1rem; margin-left: 1.8rem;">
+            Xáo trộn thứ tự các lựa chọn trong mỗi câu hỏi.
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeStartExamModal()">Hủy</button>
+          <button type="button" class="btn btn-primary" onclick="startExam()">🚀 Bắt đầu</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PIN Verify Modal -->
+  <div id="pin-modal" class="modal-overlay">
+    <div class="modal" style="max-width: 350px;">
+      <div class="modal-header">
+        <h2>🔐 Nhập PIN</h2>
+        <button class="btn-icon" onclick="closePinModal()">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted mb-2">Nhập mã PIN 4 số để chỉnh sửa exam:</p>
+        <input type="password" id="pin-input" class="form-control pin-input" maxlength="4" pattern="[0-9]{4}"
+          placeholder="••••" autocomplete="off">
+        <p id="pin-error" class="text-danger hidden" style="margin-top: 0.5rem; font-size: 0.85rem;"></p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closePinModal()">Hủy</button>
+        <button type="button" class="btn btn-primary" onclick="verifyPin()">Xác nhận</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete Confirm Modal -->
+  <div id="delete-modal" class="modal-overlay">
+    <div class="modal" style="max-width: 380px;">
+      <div class="modal-header">
+        <h2>🗑️ Xóa Exam</h2>
+        <button class="btn-icon" onclick="closeDeleteModal()">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted mb-2">Nhập mã PIN để xác nhận xóa exam:</p>
+        <input type="password" id="delete-pin-input" class="form-control pin-input" maxlength="4" pattern="[0-9]{4}"
+          placeholder="••••" autocomplete="off">
+        <p id="delete-error" class="text-danger hidden" style="margin-top: 0.5rem; font-size: 0.85rem;"></p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeDeleteModal()">Hủy</button>
+        <button type="button" class="btn btn-danger" onclick="confirmDelete()">Xóa</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- User History Modal -->
+  <div id="history-modal" class="modal-overlay">
+    <div class="modal" style="max-width: 500px;">
+      <div class="modal-header">
+        <h2>Lịch sử thi</h2>
+        <button class="btn-icon" onclick="closeHistoryModal()">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body" id="history-content">
+        <!-- History content loaded dynamically -->
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeHistoryModal()">Đóng</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/ticker.js"></script>
+  <script src="/js/app.js"></script>
+</body>
+
+</html>
