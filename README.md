@@ -21,7 +21,7 @@ docker-compose up -d --build
 docker-compose logs -f
 ```
 
-Truy cập: http://localhost:3000
+Truy cập: http://localhost:80
 
 ## Chạy local (dev)
 
