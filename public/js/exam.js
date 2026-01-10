@@ -507,7 +507,8 @@ async function submitExam() {
             body: JSON.stringify({ answers, time_taken: timeTaken, user_name: userNameParam ? decodeURIComponent(userNameParam) : null })
         });
         const result = await res.json();
-        sessionStorage.setItem('examResult', JSON.stringify({ ...result, examTitle: exam.title, timeTaken, markedQuestionIds: questions.filter((q, i) => markedQuestions.has(i)).map(q => q.id) }));
+        const queryParams = window.location.search;
+        sessionStorage.setItem('examResult', JSON.stringify({ ...result, examTitle: exam.title, timeTaken, markedQuestionIds: questions.filter((q, i) => markedQuestions.has(i)).map(q => q.id), queryParams }));
         window.location.href = '/result.html';
     } catch (e) { alert('Lỗi nộp bài'); }
 }

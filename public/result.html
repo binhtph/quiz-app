@@ -108,7 +108,7 @@
 
         <div class="result-actions">
           <a href="/" class="btn btn-secondary">Về trang chủ</a>
-          <a href="/exam.html?id=${new URLSearchParams(window.location.search).get('id') || ''}" class="btn btn-primary" onclick="sessionStorage.removeItem('examResult')">Làm lại</a>
+          <a href="/exam.html${result.queryParams || ''}" class="btn btn-primary" onclick="sessionStorage.removeItem('examResult')">Làm lại</a>
         </div>
 
         <div class="review-list">
