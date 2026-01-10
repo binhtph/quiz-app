@@ -261,7 +261,7 @@ function copyExport() {
   const text = document.getElementById('export-text');
   text.select();
   document.execCommand('copy');
-  alert('Đã sao chép vào clipboard!');
+  showToast('Đã sao chép vào clipboard!', 'success');
 }
 
 function downloadJSON() {
@@ -1125,6 +1125,32 @@ async function deleteQuestion(id) {
 
 // Duplicate functions removed
 
+
+// ===== Toast Notification =====
+function showToast(message, type = 'success', duration = 3000) {
+  const container = document.getElementById('toast-container');
+  if (!container) return;
+
+  const icons = {
+    success: '✅',
+    error: '❌',
+    info: 'ℹ️'
+  };
+
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.innerHTML = `
+        <span class="toast-icon">${icons[type] || icons.info}</span>
+        <span class="toast-message">${escapeHtml(message).replace(/\n/g, '<br>')}</span>
+    `;
+
+  container.appendChild(toast);
+
+  setTimeout(() => {
+    toast.classList.add('fade-out');
+    setTimeout(() => toast.remove(), 500);
+  }, duration);
+}
 
 // ===== Utilities =====
 function escapeHtml(text) {
