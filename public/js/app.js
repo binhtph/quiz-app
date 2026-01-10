@@ -1,5 +1,40 @@
 const API_URL = '/api';
 
+// ===== Toast Notification =====
+function showToast(message, type = 'success', duration = 3000) {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+
+    const icons = {
+        success: '✅',
+        error: '❌',
+        info: 'ℹ️'
+    };
+
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    // Allow HTML in message for newlines
+    toast.innerHTML = `
+        <span class="toast-icon">${icons[type] || icons.info}</span>
+        <span class="toast-message">${escapeHtml(message).replace(/\n/g, '<br>')}</span>
+    `;
+
+    container.appendChild(toast);
+
+    // Start fade out before removing
+    setTimeout(() => {
+        toast.classList.add('fade-out');
+        setTimeout(() => toast.remove(), 500);
+    }, duration);
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
 let viewMode = localStorage.getItem('viewMode') || 'grid';
 let currentExamId = null;
 let currentPinCallback = null;
@@ -67,7 +102,7 @@ async function showGlobalHistory(userName) {
         `;
         modal.classList.add('active');
     } catch (error) {
-        alert('Không thể tải lịch sử. Vui lòng thử lại.');
+        showToast('Không thể tải lịch sử. Vui lòng thử lại.', 'error');
     }
 }
 
@@ -279,7 +314,7 @@ function closeStartExamModal() {
 function startExam() {
     const userName = document.getElementById('user-name').value.trim();
     if (!userName) {
-        alert('Vui lòng nhập tên của bạn!');
+        showToast('Vui lòng nhập tên của bạn!', 'error');
         return;
     }
 
@@ -379,7 +414,7 @@ async function handleLogoUpload(event) {
     if (!file) return;
 
     if (file.size > 500 * 1024) {
-        alert('Hình ảnh quá lớn (tối đa 500KB)');
+        showToast('Hình ảnh quá lớn (tối đa 500KB)', 'error');
         return;
     }
 
@@ -430,14 +465,18 @@ async function saveExam(event) {
             const result = await response.json();
 
             if (!id && result.pin_code) {
-                alert(`✅ Exam đã tạo!\n\n🔐 Mã PIN mặc định: ${result.pin_code}\n\nBạn có thể đổi PIN trong phần chỉnh sửa.`);
+                showToast(`Exam đã tạo!\nMã PIN mặc định: ${result.pin_code}`, 'success', 5000);
+            } else if (!id) {
+                showToast('Tạo Exam thành công!', 'success');
+            } else {
+                showToast('Cập nhật Exam thành công!', 'success');
             }
 
             closeExamModal();
             loadExams();
         }
     } catch (error) {
-        alert('Có lỗi xảy ra. Vui lòng thử lại.');
+        showToast('Có lỗi xảy ra. Vui lòng thử lại.', 'error');
     }
 }
 
