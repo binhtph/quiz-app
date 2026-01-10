@@ -10,6 +10,7 @@ services:
     environment:
       - NODE_ENV=production
       - DB_PATH=/app/data/quiz.db
+      - TZ=Asia/Ho_Chi_Minh
 
 volumes:
   quiz-data:
