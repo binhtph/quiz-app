@@ -3,6 +3,30 @@ const urlParams = new URLSearchParams(window.location.search);
 const examId = urlParams.get('id');
 
 let exam = null;
+
+// ===== Toast Notification =====
+function showToast(message, type = 'success', duration = 3000) {
+  // Remove existing toasts
+  document.querySelectorAll('.toast').forEach(t => t.remove());
+
+  const toast = document.createElement('div');
+  toast.className = `toast toast-${type}`;
+  toast.innerHTML = `
+    <span class="toast-icon">${type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️'}</span>
+    <span class="toast-message">${message}</span>
+  `;
+
+  document.body.appendChild(toast);
+
+  // Trigger animation
+  requestAnimationFrame(() => toast.classList.add('show'));
+
+  // Auto remove
+  setTimeout(() => {
+    toast.classList.remove('show');
+    setTimeout(() => toast.remove(), 300);
+  }, duration);
+}
 let questions = [];
 let selectedQuestionId = null;
 let currentLogoUrl = null;
@@ -846,7 +870,7 @@ async function updateQuestionInline(event, id) {
   }
 
   try {
-    await fetch(`${API_URL}/questions/${id}`, {
+    const response = await fetch(`${API_URL}/questions/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -859,10 +883,15 @@ async function updateQuestionInline(event, id) {
       })
     });
 
+    if (!response.ok) {
+      throw new Error('Failed to save');
+    }
+
     await loadQuestions();
     selectQuestion(id);
+    showToast('Đã lưu thay đổi thành công!', 'success');
   } catch (error) {
-    alert('Có lỗi xảy ra. Vui lòng thử lại.');
+    showToast('Có lỗi xảy ra. Vui lòng thử lại.', 'error');
   }
 }
 
