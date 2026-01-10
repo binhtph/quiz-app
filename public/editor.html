@@ -216,7 +216,9 @@
                                 onclick="triggerImageUpload('q-notes')">📷 Chèn ảnh</button>
                         </div>
                         <textarea id="q-notes" class="form-control notes-input"
-                            placeholder="Thêm ghi chú giải thích đáp án..."></textarea>
+                            placeholder="Thêm ghi chú giải thích đáp án..."
+                            oninput="document.getElementById('q-notes-preview').innerHTML = renderContent(this.value)"></textarea>
+                        <div id="q-notes-preview" class="question-preview-box mt-2"></div>
                     </div>
                 </div>
                 <div class="modal-footer">

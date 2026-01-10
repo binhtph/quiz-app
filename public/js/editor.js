@@ -670,7 +670,8 @@ function renderQuestionEditor(question) {
           <label class="notes-label">Ghi chú (hiển thị trong Learn Mode)</label>
           <button type="button" class="btn btn-secondary btn-sm" onclick="triggerImageUpload('edit-notes')">📷 Chèn ảnh</button>
         </div>
-        <textarea id="edit-notes" class="form-control notes-input" placeholder="Thêm ghi chú giải thích đáp án...">${escapeHtml(question.notes || '')}</textarea>
+        <textarea id="edit-notes" class="form-control notes-input" placeholder="Thêm ghi chú giải thích đáp án..." oninput="document.getElementById('edit-notes-preview').innerHTML = renderContent(this.value)">${escapeHtml(question.notes || '')}</textarea>
+        <div id="edit-notes-preview" class="question-preview-box mt-2">${renderContent(question.notes || '')}</div>
       </div>
       
       <div class="flex gap-2" style="margin-top: 1.5rem;">
@@ -882,6 +883,7 @@ function openQuestionModal() {
 
   toggleQuestionType();
   document.getElementById('q-add-preview').innerHTML = '';
+  document.getElementById('q-notes-preview').innerHTML = '';
   document.getElementById('question-modal').classList.add('active');
 }
 
