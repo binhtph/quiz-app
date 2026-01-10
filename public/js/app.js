@@ -80,7 +80,9 @@ async function showGlobalHistory(userName) {
             <div class="history-list">
                 ${data.history.length === 0 ? '<p class="text-muted">Bạn chưa hoàn thành bài thi nào.</p>' :
                 data.history.map((h, i) => {
-                    const date = new Date(h.completed_at);
+                    // DB stores UTC string "YYYY-MM-DD HH:MM:SS", convert to "YYYY-MM-DDTHH:MM:SSZ"
+                    const dateRaw = h.completed_at.replace(' ', 'T') + 'Z';
+                    const date = new Date(dateRaw);
                     const dateStr = date.toLocaleDateString('vi-VN') + ' ' + date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
                     const minutes = Math.floor(h.time_taken / 60);
                     const seconds = h.time_taken % 60;
@@ -228,7 +230,9 @@ async function showUserHistory(examId, userName) {
       <p class="text-muted">Tổng số lần thi: <strong>${data.total_attempts}</strong> | Điểm cao nhất: <strong>${data.best_score}</strong></p>
       <div class="history-list">
         ${data.history.map((h, i) => {
-            const date = new Date(h.completed_at);
+            // DB stores UTC string "YYYY-MM-DD HH:MM:SS", convert to "YYYY-MM-DDTHH:MM:SSZ"
+            const dateRaw = h.completed_at.replace(' ', 'T') + 'Z';
+            const date = new Date(dateRaw);
             const dateStr = date.toLocaleDateString('vi-VN') + ' ' + date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
             const minutes = Math.floor(h.time_taken / 60);
             const seconds = h.time_taken % 60;
