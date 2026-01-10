@@ -6,7 +6,9 @@ const db = require('../database');
 router.get('/', (req, res) => {
     try {
         const exams = db.prepare(`
-      SELECT e.*, COUNT(q.id) as question_count 
+      SELECT e.id, e.title, e.description, e.time_limit, e.learn_mode, e.logo, e.pin_code,
+             strftime('%Y-%m-%dT%H:%M:%SZ', e.created_at) as created_at, 
+             COUNT(q.id) as question_count 
       FROM exams e 
       LEFT JOIN questions q ON e.id = q.exam_id 
       GROUP BY e.id 
@@ -41,7 +43,11 @@ router.get('/', (req, res) => {
 // Get single exam
 router.get('/:id', (req, res) => {
     try {
-        const exam = db.prepare('SELECT * FROM exams WHERE id = ?').get(req.params.id);
+        const exam = db.prepare(`
+            SELECT id, title, description, time_limit, learn_mode, logo, pin_code,
+                   strftime('%Y-%m-%dT%H:%M:%SZ', created_at) as created_at
+            FROM exams WHERE id = ?
+        `).get(req.params.id);
         if (!exam) {
             return res.status(404).json({ error: 'Exam not found' });
         }
@@ -228,7 +234,8 @@ router.get('/:id/history/:userName', (req, res) => {
     try {
         const userName = decodeURIComponent(req.params.userName);
         const results = db.prepare(`
-      SELECT score, total, time_taken, completed_at,
+      SELECT score, total, time_taken, 
+             strftime('%Y-%m-%dT%H:%M:%SZ', completed_at) as completed_at,
              ROUND(score * 100.0 / total, 1) as percentage
       FROM results 
       WHERE exam_id = ? AND user_name = ?
@@ -382,7 +389,9 @@ router.get('/history/user/:userName', (req, res) => {
     try {
         const userName = decodeURIComponent(req.params.userName);
         const results = db.prepare(`
-            SELECT r.*, e.title as exam_title,
+            SELECT r.id, r.exam_id, r.user_name, r.score, r.total, r.time_taken, r.answers,
+                   strftime('%Y-%m-%dT%H:%M:%SZ', r.completed_at) as completed_at,
+                   e.title as exam_title,
                    ROUND(r.score * 100.0 / r.total, 1) as percentage
             FROM results r
             JOIN exams e ON r.exam_id = e.id
