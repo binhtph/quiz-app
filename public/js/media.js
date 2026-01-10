@@ -54,14 +54,14 @@ function setupDragDrop() {
     });
 
     zone.addEventListener('drop', e => {
-        const files = e.dataTransfer.files;
+        const files = Array.from(e.dataTransfer.files);
         if (files.length > 0) uploadFiles(files);
     });
 }
 
 // ===== File Upload =====
 function handleFileSelect(event) {
-    const files = event.target.files;
+    const files = Array.from(event.target.files); // Convert to Array to persist after input reset
     if (files.length > 0) uploadFiles(files);
     event.target.value = ''; // Reset input
 }
@@ -69,6 +69,9 @@ function handleFileSelect(event) {
 async function uploadFiles(files) {
     const total = files.length;
     let success = 0;
+    let errors = [];
+
+    showToast(`Đang upload ${total} file...`, 'info', 2000);
 
     for (const file of files) {
         const formData = new FormData();
@@ -80,13 +83,28 @@ async function uploadFiles(files) {
                 body: formData
             });
             const data = await res.json();
-            if (data.success) success++;
+
+            if (res.ok && data.success) {
+                success++;
+            } else {
+                console.error(`Failed to upload ${file.name}:`, data.error);
+                errors.push(`${file.name}: ${data.error}`);
+            }
         } catch (e) {
-            console.error('Upload error:', e);
+            console.error(`Error uploading ${file.name}:`, e);
+            errors.push(`${file.name}: Lỗi kết nối`);
         }
     }
 
-    showToast(`Đã upload thành công ${success}/${total} file.`, 'success');
+    if (success === total) {
+        showToast(`Đã upload thành công ${success}/${total} file.`, 'success');
+    } else if (success > 0) {
+        showToast(`Upload xong ${success}/${total} file.\nLỗi ${errors.length} file.`, 'info');
+        console.warn('Upload errors:', errors);
+    } else {
+        showToast(`Upload thất bại.\n${errors[0] || ''}`, 'error');
+    }
+
     loadMedia();
 }
 
