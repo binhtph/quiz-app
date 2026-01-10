@@ -79,12 +79,38 @@
         document.addEventListener('DOMContentLoaded', () => {
             createTicker();
             initRecordSSE();
+            loadVersionBadge();
         });
     } else {
         createTicker();
         initRecordSSE();
+        loadVersionBadge();
     }
 
     // Expose for manual triggering (e.g., from result page)
     window.showRecordTicker = showTicker;
+
+    // Load and display version badge in footer
+    async function loadVersionBadge() {
+        const badge = document.getElementById('version-badge');
+        const link = document.getElementById('github-link');
+        if (!badge || !link) return;
+
+        try {
+            const res = await fetch('/api/version');
+            const data = await res.json();
+
+            if (data.commit) {
+                badge.textContent = ` @ ${data.commit}`;
+                badge.style.fontFamily = 'monospace';
+                badge.style.fontSize = '0.85em';
+                badge.style.opacity = '0.8';
+
+                // Update link to point to specific commit
+                link.href = `https://github.com/binhtph/quiz-app/commit/${data.commitFull}`;
+            }
+        } catch (e) {
+            // Silently fail - version badge is optional
+        }
+    }
 })();

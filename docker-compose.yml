@@ -1,6 +1,10 @@
 services:
   quiz-app:
-    build: .
+    build:
+      context: .
+      args:
+        - GIT_COMMIT=${GIT_COMMIT:-unknown}
+        - GIT_COMMIT_FULL=${GIT_COMMIT_FULL:-unknown}
     container_name: quiz-app
     ports:
       - "80:3000"

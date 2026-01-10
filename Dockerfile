@@ -5,6 +5,10 @@ RUN apk add --no-cache python3 make g++ tzdata
 
 WORKDIR /app
 
+# Build arguments for version info
+ARG GIT_COMMIT=unknown
+ARG GIT_COMMIT_FULL=unknown
+
 # Copy package files
 COPY package*.json ./
 
@@ -23,6 +27,8 @@ EXPOSE 3000
 # Set environment variables
 ENV NODE_ENV=production
 ENV DB_PATH=/app/data/quiz.db
+ENV GIT_COMMIT=$GIT_COMMIT
+ENV GIT_COMMIT_FULL=$GIT_COMMIT_FULL
 
 # Start server
 CMD ["npm", "start"]
