@@ -56,11 +56,13 @@ const examsRouter = require('./routes/exams');
 const questionsRouter = require('./routes/questions');
 const uploadRouter = require('./routes/upload');
 const mediaRouter = require('./routes/media');
+const backupRouter = require('./routes/backup');
 
 app.use('/api/exams', examsRouter);
 app.use('/api/questions', questionsRouter);
 app.use('/api/upload', uploadRouter);
 app.use('/api/media', mediaRouter);
+app.use('/api/backup', backupRouter);
 
 // SPA fallback
 app.get('*', (req, res) => {

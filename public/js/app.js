@@ -484,6 +484,104 @@ async function saveExam(event) {
     }
 }
 
+// ===== Backup (Export/Import) =====
+function toggleBackupMenu() {
+    const menu = document.getElementById('backup-menu');
+    if (menu) {
+        menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+    }
+}
+
+// Close backup menu when clicking outside
+document.addEventListener('click', (e) => {
+    const menu = document.getElementById('backup-menu');
+    const dropdown = e.target.closest('.dropdown');
+    if (menu && !dropdown) {
+        menu.style.display = 'none';
+    }
+});
+
+async function exportData() {
+    toggleBackupMenu();
+    showToast('Đang tạo file backup...', 'info');
+
+    try {
+        const response = await fetch(`${API_URL}/backup/export`);
+        if (!response.ok) throw new Error('Export failed');
+
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `quiz-backup-${new Date().toISOString().split('T')[0]}.zip`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+
+        showToast('Đã tải file backup thành công!', 'success');
+    } catch (error) {
+        console.error('Export error:', error);
+        showToast('Lỗi khi tạo backup: ' + error.message, 'error');
+    }
+}
+
+async function importData() {
+    toggleBackupMenu();
+
+    const confirmed = confirm(
+        '⚠️ CẢNH BÁO: Import sẽ XÓA TẤT CẢ dữ liệu exams hiện tại!\n\n' +
+        '• Tất cả các exam và câu hỏi sẽ bị ghi đè\n' +
+        '• Kết quả thi (lịch sử) sẽ được giữ lại\n' +
+        '• Hình ảnh hiện tại sẽ bị thay thế\n\n' +
+        'Bạn có chắc chắn muốn tiếp tục?'
+    );
+
+    if (!confirmed) return;
+
+    // Create file input
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.zip';
+
+    input.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        showToast('Đang import dữ liệu...', 'info');
+
+        const formData = new FormData();
+        formData.append('backup', file);
+
+        try {
+            const response = await fetch(`${API_URL}/backup/import`, {
+                method: 'POST',
+                body: formData
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(result.error || 'Import failed');
+            }
+
+            showToast(
+                `Import thành công! ${result.imported.exams} exams, ${result.imported.questions} câu hỏi, ${result.imported.files} files`,
+                'success'
+            );
+
+            // Reload page to show new data
+            setTimeout(() => location.reload(), 1500);
+
+        } catch (error) {
+            console.error('Import error:', error);
+            showToast('Lỗi khi import: ' + error.message, 'error');
+        }
+    };
+
+    input.click();
+}
+
 // ===== Utilities =====
 function escapeHtml(text) {
     if (!text) return '';

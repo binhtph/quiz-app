@@ -6,6 +6,7 @@ services:
       - "80:3000"
     volumes:
       - quiz-data:/app/data
+      - quiz-uploads:/app/uploads
       - /etc/localtime:/etc/localtime:ro
     restart: unless-stopped
     environment:
@@ -15,3 +16,5 @@ services:
 
 volumes:
   quiz-data:
+  quiz-uploads:
+

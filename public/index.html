@@ -40,6 +40,23 @@
             </svg>
           </button>
         </div>
+        <!-- Backup Menu -->
+        <div class="dropdown" style="position: relative;">
+          <button class="btn btn-secondary" onclick="toggleBackupMenu()" title="Backup">
+            💾 Backup ▾
+          </button>
+          <div id="backup-menu" class="dropdown-menu"
+            style="display: none; position: absolute; top: 100%; right: 0; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; box-shadow: var(--shadow-lg); min-width: 160px; z-index: 100; margin-top: 4px;">
+            <button class="dropdown-item" onclick="exportData()"
+              style="display: block; width: 100%; padding: 10px 16px; text-align: left; border: none; background: none; cursor: pointer; color: var(--text-color);">
+              📤 Export Data
+            </button>
+            <button class="dropdown-item" onclick="importData()"
+              style="display: block; width: 100%; padding: 10px 16px; text-align: left; border: none; background: none; cursor: pointer; color: var(--text-color);">
+              📥 Import Data
+            </button>
+          </div>
+        </div>
         <a href="/media.html" class="btn btn-secondary" title="Quản lý Media">
           🖼️ Media
         </a>
