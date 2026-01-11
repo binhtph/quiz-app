@@ -30,6 +30,7 @@ function showToast(message, type = 'success', duration = 3000) {
 let questions = [];
 let selectedQuestionId = null;
 let currentLogoUrl = null;
+let searchKeyword = '';
 
 // ===== Initialize =====
 async function init() {
@@ -531,7 +532,24 @@ function renderQuestionList() {
 
   const typeLabels = { single_choice: 'SC', multiple_choice: 'MC', drag_drop: 'DD', matching: 'Match' };
 
-  container.innerHTML = questions.map((q, i) => {
+  // Filter questions by keyword
+  const keyword = searchKeyword.toLowerCase().trim();
+  const filteredQuestions = keyword
+    ? questions.filter(q => q.question.toLowerCase().includes(keyword))
+    : questions;
+
+  if (filteredQuestions.length === 0 && keyword) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <p>Không tìm thấy câu hỏi nào với từ khóa "${escapeHtml(searchKeyword)}"</p>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = filteredQuestions.map((q) => {
+    // Get original index for order number
+    const originalIndex = questions.indexOf(q);
     // Strip image markdown
     const plainText = q.question.replace(/!\[.*?\]\(.*?\)/g, '🖼️').trim();
 
@@ -539,12 +557,12 @@ function renderQuestionList() {
 
     <div class="question-list-item ${q.id === selectedQuestionId ? 'active' : ''}" 
          draggable="true"
-         ondragstart="handleListDragStart(event, ${i})"
+         ondragstart="handleListDragStart(event, ${originalIndex})"
          ondragover="handleListDragOver(event)"
-         ondrop="handleListDrop(event, ${i})"
+         ondrop="handleListDrop(event, ${originalIndex})"
          onclick="selectQuestion(${q.id})">
       <span class="drag-handle">⋮⋮</span>
-      <span class="order">${i + 1}</span>
+      <span class="order">${originalIndex + 1}</span>
       <span class="content">${escapeHtml(plainText)}</span>
       <div class="type-actions">
         <span class="type">${typeLabels[q.type] || q.type}</span>
@@ -557,6 +575,12 @@ function renderQuestionList() {
       </div>
     </div>
   `}).join('');
+}
+
+// Search/Filter questions
+function filterQuestions(keyword) {
+  searchKeyword = keyword;
+  renderQuestionList();
 }
 
 

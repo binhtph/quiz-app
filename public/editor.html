@@ -118,6 +118,9 @@
             <div class="question-list">
                 <div class="question-list-header">
                     <h3>Danh sách câu hỏi</h3>
+                    <div class="search-box">
+                        <input type="text" id="question-search" class="form-control" placeholder="🔍 Tìm câu hỏi..." oninput="filterQuestions(this.value)">
+                    </div>
                 </div>
                 <div id="question-list-items" class="question-list-items">
                     <div class="empty-state">
