@@ -531,26 +531,34 @@ function renderQuestionList() {
 
   const typeLabels = { single_choice: 'SC', multiple_choice: 'MC', drag_drop: 'DD', matching: 'Match' };
 
-  container.innerHTML = questions.map((q, i) => `
+  container.innerHTML = questions.map((q, i) => {
+    // Strip image markdown
+    const plainText = q.question.replace(/!\[.*?\]\(.*?\)/g, '🖼️').trim();
+
+    return `
+
     <div class="question-list-item ${q.id === selectedQuestionId ? 'active' : ''}" 
          draggable="true"
          ondragstart="handleListDragStart(event, ${i})"
          ondragover="handleListDragOver(event)"
          ondrop="handleListDrop(event, ${i})"
          onclick="selectQuestion(${q.id})">
-      <span class="drag-handle" style="cursor: move; margin-right: 0.5rem; color: #ccc;">⋮⋮</span>
+      <span class="drag-handle">⋮⋮</span>
       <span class="order">${i + 1}</span>
-      <span class="content">${escapeHtml(q.question).replace(/!\[.*?\]\(.*?\)/g, '🖼️ Hình ảnh')}</span>
-      <span class="type">${typeLabels[q.type] || q.type}</span>
-      <button class="btn-icon delete" onclick="event.stopPropagation(); deleteQuestion(${q.id})">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="3 6 5 6 21 6"></polyline>
-          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-        </svg>
-      </button>
+      <span class="content">${escapeHtml(plainText)}</span>
+      <div class="type-actions">
+        <span class="type">${typeLabels[q.type] || q.type}</span>
+        <button class="btn-icon delete" onclick="event.stopPropagation(); deleteQuestion(${q.id})">
+          <svg width="12\" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="3 6 5 6 21 6"></polyline>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          </svg>
+        </button>
+      </div>
     </div>
-  `).join('');
+  `}).join('');
 }
+
 
 // DnD Helpers
 function handleListDragStart(e, index) {
@@ -818,9 +826,94 @@ function addEditOption(inputType = 'radio') {
   container.appendChild(div);
 }
 
-// ... existing removeEditOption ...
+// Remove option in inline editor
+function removeEditOption(button) {
+  const item = button.closest('.option-editor-item');
+  if (item) {
+    const container = document.getElementById('edit-options');
+    if (container.querySelectorAll('.option-editor-item').length > 2) {
+      item.remove();
+    } else {
+      alert('Cần ít nhất 2 đáp án!');
+    }
+  }
+}
 
-// ... existing code ...
+// Add DD item in inline editor
+function addEditDDItem() {
+  const container = document.getElementById('edit-dd-items');
+  const index = container.querySelectorAll('.option-editor-item').length;
+  const div = document.createElement('div');
+  div.className = 'option-editor-item';
+  div.innerHTML = `
+    <span style="min-width: 30px; color: var(--text-muted);">${index + 1}.</span>
+    <input type="text" class="form-control edit-dd-item" required placeholder="Nhập mục...">
+    <button type="button" class="btn-icon" onclick="removeEditDDItem(this)">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="18" y1="6" x2="6" y2="18"></line>
+        <line x1="6" y1="6" x2="18" y2="18"></line>
+      </svg>
+    </button>
+  `;
+  container.appendChild(div);
+}
+
+// Remove DD item in inline editor
+function removeEditDDItem(button) {
+  const item = button.closest('.option-editor-item');
+  if (item) {
+    const container = document.getElementById('edit-dd-items');
+    if (container.querySelectorAll('.option-editor-item').length > 2) {
+      item.remove();
+      // Renumber items
+      container.querySelectorAll('.option-editor-item').forEach((el, i) => {
+        const numSpan = el.querySelector('span');
+        if (numSpan) numSpan.textContent = `${i + 1}.`;
+      });
+    } else {
+      alert('Cần ít nhất 2 mục!');
+    }
+  }
+}
+
+// Add matching pair in inline editor
+function addMatchingPair() {
+  const container = document.getElementById('edit-matching-pairs');
+  const index = container.querySelectorAll('.option-editor-item').length;
+  const div = document.createElement('div');
+  div.className = 'option-editor-item matching-pair-editor';
+  div.innerHTML = `
+    <span style="min-width: 30px; color: var(--text-muted);">${index + 1}.</span>
+    <input type="text" class="form-control edit-match-left" placeholder="Trái" required>
+    <span style="color: var(--text-muted);">→</span>
+    <input type="text" class="form-control edit-match-right" placeholder="Phải" required>
+    <button type="button" class="btn-icon" onclick="removeMatchingPair(this)">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="18" y1="6" x2="6" y2="18"></line>
+        <line x1="6" y1="6" x2="18" y2="18"></line>
+      </svg>
+    </button>
+  `;
+  container.appendChild(div);
+}
+
+// Remove matching pair in inline editor
+function removeMatchingPair(button) {
+  const item = button.closest('.option-editor-item');
+  if (item) {
+    const container = document.getElementById('edit-matching-pairs');
+    if (container.querySelectorAll('.option-editor-item').length > 2) {
+      item.remove();
+      // Renumber pairs
+      container.querySelectorAll('.option-editor-item').forEach((el, i) => {
+        const numSpan = el.querySelector('span');
+        if (numSpan) numSpan.textContent = `${i + 1}.`;
+      });
+    } else {
+      alert('Cần ít nhất 2 cặp ghép!');
+    }
+  }
+}
 
 async function updateQuestionInline(event, id) {
   event.preventDefault();
