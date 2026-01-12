@@ -260,15 +260,29 @@ async function processImport() {
       showToast('Vui lòng chọn file JSON hợp lệ!', 'error');
       return;
     }
-    // Clean up JSON questions - only keep necessary fields
-    questionsData = pendingJsonQuestions.map((q, i) => ({
-      question: q.question,
-      type: q.type || 'single_choice',
-      options: q.options,
-      correct_answer: q.correct_answer,
-      notes: q.notes || '',
-      order_num: i + 1
-    }));
+    // Clean up JSON questions - ensure proper format
+    questionsData = pendingJsonQuestions.map((q, i) => {
+      // Parse options if it's a string (from old exports or double-stringify)
+      let options = q.options;
+      if (typeof options === 'string') {
+        try { options = JSON.parse(options); } catch (e) { options = []; }
+      }
+
+      // Parse correct_answer if it's a string for complex types
+      let correct_answer = q.correct_answer;
+      if (typeof correct_answer === 'string' && ['drag_drop', 'matching', 'multiple_choice'].includes(q.type)) {
+        try { correct_answer = JSON.parse(correct_answer); } catch (e) { /* keep as is */ }
+      }
+
+      return {
+        question: q.question,
+        type: q.type || 'single_choice',
+        options: options,
+        correct_answer: correct_answer,
+        notes: q.notes || '',
+        order_num: i + 1
+      };
+    });
   }
 
   if (questionsData.length === 0) {
