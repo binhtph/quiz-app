@@ -181,8 +181,14 @@ async function updateExamSetting(key, value) {
 }
 
 // ===== Import Logic =====
+let currentImportTab = 'text';
+let pendingJsonQuestions = null;
+
 function openImportModal() {
   document.getElementById('import-text').value = '';
+  document.getElementById('json-file-name').textContent = 'Chưa chọn file';
+  pendingJsonQuestions = null;
+  switchImportTab('text');
   document.getElementById('import-modal').classList.add('active');
 }
 
@@ -190,15 +196,83 @@ function closeImportModal() {
   document.getElementById('import-modal').classList.remove('active');
 }
 
+function switchImportTab(tab) {
+  currentImportTab = tab;
+  const btnText = document.querySelector('.import-tabs button:first-child');
+  const btnJson = document.querySelector('.import-tabs button:last-child');
+  const divText = document.getElementById('import-tab-text');
+  const divJson = document.getElementById('import-tab-json');
+
+  if (tab === 'text') {
+    btnText.classList.add('active');
+    btnJson.classList.remove('active');
+    divText.classList.remove('hidden');
+    divJson.classList.add('hidden');
+  } else {
+    btnText.classList.remove('active');
+    btnJson.classList.add('active');
+    divText.classList.add('hidden');
+    divJson.classList.remove('hidden');
+  }
+}
+
+function handleJsonFileSelect(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  document.getElementById('json-file-name').textContent = file.name;
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (data.questions && Array.isArray(data.questions)) {
+        pendingJsonQuestions = data.questions;
+        showToast(`Đã đọc ${pendingJsonQuestions.length} câu hỏi từ file`, 'success');
+      } else if (Array.isArray(data)) {
+        pendingJsonQuestions = data;
+        showToast(`Đã đọc ${pendingJsonQuestions.length} câu hỏi từ file`, 'success');
+      } else {
+        showToast('File JSON không hợp lệ! Cần có mảng questions.', 'error');
+        pendingJsonQuestions = null;
+      }
+    } catch (err) {
+      showToast('Lỗi đọc file JSON: ' + err.message, 'error');
+      pendingJsonQuestions = null;
+    }
+  };
+  reader.readAsText(file);
+}
+
 async function processImport() {
-  const text = document.getElementById('import-text').value;
   const shouldClear = document.getElementById('import-clear-old').checked;
+  let questionsData = [];
 
-  if (!text.trim()) return;
+  if (currentImportTab === 'text') {
+    const text = document.getElementById('import-text').value;
+    if (!text.trim()) {
+      showToast('Vui lòng nhập nội dung câu hỏi!', 'error');
+      return;
+    }
+    questionsData = parseImportText(text);
+  } else {
+    if (!pendingJsonQuestions || pendingJsonQuestions.length === 0) {
+      showToast('Vui lòng chọn file JSON hợp lệ!', 'error');
+      return;
+    }
+    // Clean up JSON questions - only keep necessary fields
+    questionsData = pendingJsonQuestions.map((q, i) => ({
+      question: q.question,
+      type: q.type || 'single_choice',
+      options: q.options,
+      correct_answer: q.correct_answer,
+      notes: q.notes || '',
+      order_num: i + 1
+    }));
+  }
 
-  const questionsData = parseImportText(text);
   if (questionsData.length === 0) {
-    alert('Không tìm thấy câu hỏi nào hợp lệ!');
+    showToast('Không tìm thấy câu hỏi nào hợp lệ!', 'error');
     return;
   }
 
@@ -214,7 +288,7 @@ async function processImport() {
       await fetch(`${API_URL}/exams/${examId}/questions`, { method: 'DELETE' });
     } catch (e) {
       console.error("Failed to delete questions", e);
-      alert("Lỗi khi xóa câu hỏi cũ!");
+      showToast("Lỗi khi xóa câu hỏi cũ!", 'error');
       return;
     }
   }
@@ -234,7 +308,7 @@ async function processImport() {
     }
   }
 
-  alert(`Đã nhập thành công ${successCount}/${questionsData.length} câu hỏi.`);
+  showToast(`Đã nhập thành công ${successCount}/${questionsData.length} câu hỏi.`, 'success');
   closeImportModal();
   loadQuestions();
 }
@@ -328,7 +402,14 @@ function generateExamText(questions) {
     if (q.type === 'drag_drop') header = `${i + 1}. [Order] ${q.question}`;
     if (q.type === 'matching') header = `${i + 1}. [Match] ${q.question}`;
 
-    return `${header}\n${optionsStr}`;
+    let result = `${header}\n${optionsStr}`;
+
+    // Add notes if present
+    if (q.notes && q.notes.trim()) {
+      result += `\n[Notes] ${q.notes.trim()}`;
+    }
+
+    return result;
   }).join('\n\n');
 }
 
@@ -388,6 +469,13 @@ function parseImportText(text) {
         currentQ.matches.push({ left: parts[0].trim(), right: parts[1].trim() });
       }
     } else {
+      // Check for notes pattern [Notes] or [Ghi chú]
+      const notesMatch = line.match(/^\[(Notes|Ghi chú)\]\s*(.*)/i);
+      if (notesMatch) {
+        currentQ.notes = notesMatch[2] || '';
+        continue;
+      }
+
       // If it doesn't match an option pattern, it's part of the question content (multiline)
       if (currentQ.question) {
         currentQ.question += '\n' + line;

@@ -30,7 +30,7 @@
         <div id="import-modal" class="modal-overlay">
             <div class="modal" style="max-width: 700px;">
                 <div class="modal-header">
-                    <h2>Nhập câu hỏi từ văn bản</h2>
+                    <h2>Nhập câu hỏi</h2>
                     <button class="btn-icon" onclick="closeImportModal()">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                             stroke-width="2">
@@ -40,15 +40,38 @@
                     </button>
                 </div>
                 <div class="modal-body">
-                    <p class="mb-2 text-sm text-muted">Hỗ trợ định dạng:</p>
-                    <ul class="mb-4 text-sm text-muted" style="list-style: disc; padding-left: 1.5rem;">
-                        <li><b>Trắc nghiệm:</b> "1. Câu hỏi..." tiếp theo là "a. sai", "B. ĐÚNG", "c. sai".</li>
-                        <li><b>Sắp xếp:</b> "2. [Order] Câu hỏi..." tiếp theo là "- Mục 1", "- Mục 2" (thứ tự đúng).
-                        </li>
-                        <li><b>Ghép cặp:</b> "3. [Match] Câu hỏi..." tiếp theo là "- Trái -> Phải".</li>
-                    </ul>
-                    <textarea id="import-text" class="form-control" style="height: 300px; font-family: monospace;"
-                        placeholder="Dán nội dung câu hỏi vào đây..."></textarea>
+                    <div class="tabs import-tabs"
+                        style="margin-bottom: 1rem; display: flex; gap: 1rem; border-bottom: 1px solid #eee; padding-bottom: 0.5rem;">
+                        <button class="btn-link active" onclick="switchImportTab('text')">📝 Text Format</button>
+                        <button class="btn-link" onclick="switchImportTab('json')">📄 JSON File</button>
+                    </div>
+
+                    <!-- Text Import Tab -->
+                    <div id="import-tab-text">
+                        <p class="mb-2 text-sm text-muted">Hỗ trợ định dạng:</p>
+                        <ul class="mb-4 text-sm text-muted" style="list-style: disc; padding-left: 1.5rem;">
+                            <li><b>Trắc nghiệm:</b> "1. Câu hỏi..." tiếp theo là "a. sai", "B. ĐÚNG", "c. sai".</li>
+                            <li><b>Sắp xếp:</b> "2. [Order] Câu hỏi..." tiếp theo là "- Mục 1", "- Mục 2" (thứ tự đúng).
+                            </li>
+                            <li><b>Ghép cặp:</b> "3. [Match] Câu hỏi..." tiếp theo là "- Trái -> Phải".</li>
+                            <li><b>Ghi chú:</b> "[Notes] Nội dung ghi chú..." sau các đáp án.</li>
+                        </ul>
+                        <textarea id="import-text" class="form-control" style="height: 280px; font-family: monospace;"
+                            placeholder="Dán nội dung câu hỏi vào đây..."></textarea>
+                    </div>
+
+                    <!-- JSON Import Tab -->
+                    <div id="import-tab-json" class="hidden">
+                        <p class="mb-2 text-sm text-muted">Import từ file JSON đã export trước đó:</p>
+                        <div class="json-upload-area" onclick="document.getElementById('import-json-file').click()"
+                            style="border: 2px dashed var(--border); border-radius: var(--radius); padding: 3rem; text-align: center; cursor: pointer; transition: all 0.2s;">
+                            <div style="font-size: 3rem; margin-bottom: 1rem;">📁</div>
+                            <p>Click để chọn file JSON hoặc kéo thả vào đây</p>
+                            <p class="text-sm text-muted" id="json-file-name">Chưa chọn file</p>
+                        </div>
+                        <input type="file" id="import-json-file" accept=".json" style="display:none"
+                            onchange="handleJsonFileSelect(event)">
+                    </div>
 
                     <div class="checkbox-group" style="margin-top: 1rem;">
                         <input type="checkbox" id="import-clear-old">
@@ -58,7 +81,8 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" onclick="closeImportModal()">Hủy</button>
-                    <button type="button" class="btn btn-primary" onclick="processImport()">Nhập câu hỏi</button>
+                    <button type="button" class="btn btn-primary" id="btn-import" onclick="processImport()">Nhập câu
+                        hỏi</button>
                 </div>
             </div>
         </div>
@@ -119,7 +143,8 @@
                 <div class="question-list-header">
                     <h3>Danh sách câu hỏi</h3>
                     <div class="search-box">
-                        <input type="text" id="question-search" class="form-control" placeholder="🔍 Tìm câu hỏi..." oninput="filterQuestions(this.value)">
+                        <input type="text" id="question-search" class="form-control" placeholder="🔍 Tìm câu hỏi..."
+                            oninput="filterQuestions(this.value)">
                     </div>
                 </div>
                 <div id="question-list-items" class="question-list-items">

@@ -24,6 +24,9 @@
 - 📷 Paste hình ảnh vào câu hỏi
 - 📁 Quản lý Media (upload, xóa, đổi tên)
 - 💾 Export/Import backup (ZIP)
+- 📥 Import câu hỏi từ Text hoặc JSON file
+- 📤 Export câu hỏi với ghi chú (Notes)
+- 🔍 Tìm kiếm câu hỏi trong Editor
 
 ### 🔔 Realtime
 - 📢 Thông báo kỷ lục mới (SSE)
